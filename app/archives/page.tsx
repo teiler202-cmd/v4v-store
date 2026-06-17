@@ -22,9 +22,7 @@ const archiveData = [
     id: 'szn-1',
     season: 'SZN 1',
     subtitle: 'Midbar, only be humble under god',
-    // 🔥 영문 텍스트 (content -> contentEn 으로 변경)
     contentEn: "[The start of the Idea]\nMidbar (the wilderness) is a realm where the noise of the world fades, allowing the inner voice—the voice of the Divine—to finally surface. The sweeping curves of sand dunes evoke a profound sense of awe, reflecting nature’s will to maintain order amidst vast chaos.\n\n\"The wilderness and the dry land shall be glad, the desert shall rejoice and blossom like the crocus... they shall see the glory of the Lord, the majesty of our God.\" - Isaiah 35:1-2\n\nStep away from the realities that confine us—the clamor of the city, the conditioning of media, the constant chatter of others. Block out the static, reflect deeply, align with the Divine will, and set forth to find your Midbar.\n\n[The Beauty of the Desert]\nThe curvature of the boundless desert mimics the elegant drape of soft fabric. Inspired by the ultra-fine texture of sand, the solitary silence, the endless expanse, and the utilitarian garments of desert dwellers adapted to extreme climates—this collection weaves the dual imagery of the desert: its harsh, unforgiving nature and its serene, quiet beauty.",
-    // 🔥 국문 텍스트 추가 (contentKo)
     contentKo: "[아이디어의 시작]\nMidbar(광야)는 세상의 소음이 사리지고 비로소 내면의 목소리, 신의 음성이 들리기 시작하는 공간입니다. 사구의 곡선은 거대한 혼돈 속에서도 질서를 유지하려는 자연의 모습으로 경외심을 들게 합니다.\n\n\"광야와 메마른 땅이 기뻐하며 사막이 백합화같이 피어 즐거워하며... 그것들이 여호와의 영광 곧 우리 하나님의 아름다움을 보리로다\" (이사야 35:1-2)\n\n도시의 소음, 미디어의 세뇌, 주변 사람들 등 우리를 둘러싼 현실적인 환경에서 벗어나 소음을 차단하고, 깊이 사고하며 신의 뜻대로 행하고, 신의 음성을 들을 수 있는 Midbar를 찾아서 떠나십시오.\n\n[사막의 아름다움]\n광활한 모래 사막의 곡선은 마치 부드러운 원단 같은 드레이프성을 보여줍니다. 아주 고운 촉감의 모래, 고요하고 고독한 사막의 적막, 끝을 알 수 없는 막막함, 그리고 오아시스, 사막인들의 삶의 방식과 기후적 특성을 고려한 복장에서 영감을 받은 이번 컬렉션은 거칠고 혹독한 사막과 부드럽고 고요한 사막의 두 이미지를 컬렉션에 녹여내고자 했습니다.",
     media: [
       { 
@@ -42,7 +40,7 @@ const archiveData = [
       { id: 7, type: 'image', src: 'https://i.pinimg.com/736x/e6/ea/05/e6ea056467028458d96897dde4ddb4e9.jpg', aspect: 'aspect-[16/9]' },
       { id: 8, type: 'image', src: 'https://i.pinimg.com/1200x/4b/fc/92/4bfc92f02b4f346c96608d65a3daf4f4.jpg', aspect: 'aspect-[1/1]' },
       { id: 9, type: 'image', src: 'https://i.pinimg.com/736x/61/bd/b0/61bdb0e6e16865f8b77f4a52ac8bb9f4.jpg', aspect: 'aspect-[1/1]' },
-          ]
+    ]
   },
   {
     id: 'szn-2',
@@ -102,11 +100,13 @@ export default function ArchivesPage() {
             className="flex flex-col md:flex-row gap-12 lg:gap-20"
           >
             
-            <div className="w-full md:w-[65%] grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+            {/* 🔥 [핵심 수정]: 무조건 2열(grid-cols-2)로 시작하게 만듦. 모바일에서는 여백(gap)을 살짝 줄임 */}
+            <div className="w-full md:w-[65%] grid grid-cols-2 gap-2 md:gap-6">
               {currentData.media.map((item) => (
                 <div
                   key={item.id}
-                  className={`relative w-full bg-zinc-900 overflow-hidden group cursor-crosshair ${item.fullWidth ? 'sm:col-span-2' : 'col-span-1'} ${item.aspect}`}
+                  // 🔥 [핵심 수정]: fullWidth 속성이 있는 영상만 무조건 2칸(col-span-2)을 다 차지하게 강제 설정
+                  className={`relative w-full bg-zinc-900 overflow-hidden group cursor-crosshair ${item.fullWidth ? 'col-span-2' : 'col-span-1'} ${item.aspect}`}
                 >
                   {item.type === 'youtube' ? (
                     <iframe 
@@ -126,7 +126,7 @@ export default function ArchivesPage() {
                     />
                   )}
                   
-                  <div className={`${ibm.className} absolute bottom-4 right-4 text-[10px] text-white opacity-0 group-hover:opacity-100 tracking-widest transition-opacity duration-500 uppercase mix-blend-difference`}>
+                  <div className={`${ibm.className} absolute bottom-2 right-2 md:bottom-4 md:right-4 text-[8px] md:text-[10px] text-white opacity-0 group-hover:opacity-100 tracking-widest transition-opacity duration-500 uppercase mix-blend-difference`}>
                     REF. {String(item.id).padStart(3, '0')} {item.type === 'video' && '(VID)'} {item.type === 'youtube' && '(YT)'}
                   </div>
                 </div>
@@ -140,14 +140,14 @@ export default function ArchivesPage() {
                 </h2>
                 <div className="w-8 h-[1px] bg-white"></div>
                 
-                {/* 🔥 상단 영문 텍스트 */}
+                {/* 상단 영문 텍스트 */}
                 {currentData.contentEn && (
                   <p className="text-sm md:text-base font-light text-zinc-300 leading-relaxed whitespace-pre-wrap">
                     {currentData.contentEn}
                   </p>
                 )}
 
-                {/* 🔥 하단 국문 텍스트 (나눔명조체 적용) */}
+                {/* 하단 국문 텍스트 (나눔명조체 적용) */}
                 {currentData.contentKo && (
                   <div className={`mt-4 pt-8 border-t border-zinc-900/50 ${nanumMyeongjo.className}`}>
                     <p className="text-[13px] md:text-[15px] font-light text-zinc-400 leading-[1.8] whitespace-pre-wrap break-keep">

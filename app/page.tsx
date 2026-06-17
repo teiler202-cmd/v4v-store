@@ -13,8 +13,6 @@ const ibm = IBM_Plex_Mono({
   weight: ['400', '500', '600', '700'] 
 });
 
-// 🔥 [핵심 수정]: sessionStorage 대신 '전역 변수'를 사용합니다.
-// 이렇게 하면 새로고침(새로운 접속) 시에는 초기화되고, 사이트 내에서 버튼으로 이동할 때만 유지됩니다!
 let isIntroSeen = false;
 
 export default function Home() {
@@ -29,22 +27,19 @@ export default function Home() {
   const { cart } = useCart();
   const totalItems = cart.reduce((t, i) => t + i.quantity, 0);
 
-  // 1. 처음 마운트 될 때 전역 변수 검사
   useEffect(() => {
     if (isIntroSeen) {
-      setStep('home'); // 이미 본 상태면 바로 홈으로 직행
+      setStep('home');
     }
     setIsInitialized(true);
   }, []);
 
-  // 2. 홈 화면에 도달하면 '오프닝 봤음'으로 기록
   useEffect(() => {
     if (step === 'home') {
       isIntroSeen = true;
     }
   }, [step]);
 
-  // 3. Shopify 상품 가져오기
   useEffect(() => {
     if (step === 'home') {
       const fetchProducts = async () => {
@@ -57,7 +52,21 @@ export default function Home() {
     }
   }, [step]);
 
-  // 4. 철학 문구 타이머
+  // 🔥 [추가된 핵심 코드]: 오프닝 중 푸터(Footer) 투명인간 만들기
+  useEffect(() => {
+    const footer = document.querySelector('footer');
+    
+    if (footer) {
+      // step이 'home'일 때만 보이게 하고, 오프닝(logo, quote)일 때는 숨깁니다.
+      footer.style.display = step === 'home' ? 'block' : 'none';
+    }
+
+    // 컴포넌트가 언마운트(다른 페이지로 이동)될 때는 푸터 상태를 원래대로 복구
+    return () => {
+      if (footer) footer.style.display = 'block';
+    };
+  }, [step]);
+
   useEffect(() => {
     if (step === 'quote') {
       const timer = setTimeout(() => {
@@ -67,7 +76,6 @@ export default function Home() {
     }
   }, [step]);
 
-  // 5. 성경 구절 API
   useEffect(() => {
     const fetchRandomVerse = async () => {
       try {
@@ -82,25 +90,26 @@ export default function Home() {
     fetchRandomVerse();
   }, []);
 
-  // 6. 거대 로고 폭발 클릭 핸들러 (100개 파티클 유지)
   const handleLogoClick = () => {
     if (isLogoExploded) return;
     setIsLogoExploded(true); 
     setTimeout(() => setStep('quote'), 2200); 
   };
 
-  if (!isInitialized) return <main className="min-h-screen bg-black" />;
+  if (!isInitialized) return <div className="min-h-screen bg-black w-full" />;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-x-hidden select-none font-sans">
+    <div className="w-full bg-black text-white select-none font-sans min-h-screen">
       <AnimatePresence mode="wait">
         
-        {/* 오프닝 1: V4V 로고 폭발 */}
+        {/* 오프닝 1: 로고 오프닝 (fixed inset-0 z-50으로 화면 전체를 절대 좌표로 덮음) */}
         {step === 'logo' && (
           <motion.div
             key="logo-step"
-            className="cursor-pointer flex flex-col items-center"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black cursor-pointer"
             onClick={handleLogoClick}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
           >
             <div className="flex">
               {["V", "4", "V"].map((char, index) => (
@@ -109,7 +118,7 @@ export default function Home() {
                     initial={{ opacity: 0 }}
                     animate={isLogoExploded ? { opacity: 0, scale: 0.9, filter: "blur(12px)" } : { opacity: 1, scale: 1, filter: "blur(0px)" }}
                     transition={{ duration: isLogoExploded ? 1.0 : 1.2, ease: "easeOut" }}
-                    className="text-[180px] font-bold tracking-tighter leading-none"
+                    className="text-[100px] md:text-[180px] font-bold tracking-tighter leading-none"
                   >
                     {char}
                   </motion.span>
@@ -138,22 +147,23 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* 오프닝 2: 철학 문구 */}
+        {/* 오프닝 2: 철학 문구 (fixed로 화면 위에 띄워두기) */}
         {step === 'quote' && (
           <motion.div
-            key="quote-step" exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.8 }}
-            className="flex flex-wrap justify-center max-w-5xl px-10"
+            key="quote-step"
+            className="fixed inset-0 z-50 flex flex-wrap items-center justify-center bg-black px-10"
+            exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.8 }}
           >
             <motion.div
               variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
-              initial="hidden" animate="visible" className="flex flex-wrap justify-center"
+              initial="hidden" animate="visible" className="flex flex-wrap justify-center max-w-5xl"
             >
               {quoteText.split("").map((char, index) => (
                 <motion.span
                   key={index} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
                   transition={{ duration: 0.3, ease: "linear" }}
-                  className="text-[45px] font-medium tracking-[-0.1em] uppercase inline-block"
-                  style={{ minWidth: char === " " ? "20px" : "auto" }}
+                  className="text-[18px] md:text-[45px] font-medium tracking-[-0.1em] uppercase inline-block"
+                  style={{ minWidth: char === " " ? "0.3em" : "auto" }}
                 >
                   {char}
                 </motion.span>
@@ -162,21 +172,21 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* 메인 3: 홈 화면 (헤더 & 상품 리스트) */}
+        {/* 메인 3: 홈 화면 (일반 문서 흐름) */}
         {step === 'home' && (
           <motion.div
             key="home-step" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}
-            className="w-full min-h-screen flex flex-col items-center relative"
+            className="w-full flex flex-col items-center relative"
           >
             <Header />
 
-            <div className="w-[80%] md:w-[60%] flex justify-center items-center py-6 mb-8 border-b border-zinc-900/50 min-h-[80px]">
-              <p className={`${ibm.className} text-xs md:text-sm text-zinc-500 tracking-[0.15em] uppercase text-center transition-opacity duration-1000 ${verse ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="w-[80%] md:w-[60%] flex justify-center items-center py-2 md:py-6 mb-2 md:mb-8 border-b border-zinc-900/50 min-h-[40px] md:min-h-[80px]">
+              <p className={`${ibm.className} text-[9px] md:text-sm text-zinc-500 tracking-[0.05em] md:tracking-[0.15em] uppercase text-center transition-opacity duration-1000 ${verse ? 'opacity-100' : 'opacity-0'}`}>
                 {verse}
               </p>
             </div>
 
-            <div className="mt-8 w-full max-w-[1000px] px-10 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-16 pb-20">
+            <div className="mt-2 md:mt-8 w-full max-w-[1000px] px-2 md:px-10 grid grid-cols-3 gap-x-2 md:gap-x-8 gap-y-8 md:gap-y-16 pb-20">
               {isLoading ? (
                 <div className="col-span-full h-64 flex items-center justify-center text-[10px] tracking-[0.5em] text-zinc-600 uppercase">
                   Loading performance gear...
@@ -186,7 +196,7 @@ export default function Home() {
                   <Link href={`/products/${product.handle}`} key={product.id}>
                     <motion.div 
                       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
-                      className="flex flex-col gap-4 group cursor-pointer"
+                      className="flex flex-col gap-1 md:gap-4 group cursor-pointer"
                     >
                       <div className="aspect-[3/4] bg-zinc-900 overflow-hidden border border-white/5 relative">
                         {product.images?.edges[0] && (
@@ -197,12 +207,14 @@ export default function Home() {
                           />
                         )}
                       </div>
-                      <div className="flex justify-between items-start pt-2">
-                        <h3 className="text-[12px] font-medium tracking-tight uppercase leading-tight max-w-[70%]">{product.title}</h3>
-                        <p className="text-[12px] font-light text-zinc-400">
+                      
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center pt-1 md:pt-2 gap-1 md:gap-0">
+                        <h3 className="text-[8px] md:text-[12px] font-medium tracking-tighter md:tracking-tight uppercase leading-tight max-w-full md:max-w-[70%]">{product.title}</h3>
+                        <p className="text-[8px] md:text-[12px] font-light text-zinc-400 whitespace-nowrap">
                           {product.priceRange.minVariantPrice.currencyCode} {Math.floor(product.priceRange.minVariantPrice.amount).toLocaleString()}
                         </p>
                       </div>
+
                     </motion.div>
                   </Link>
                 ))
@@ -216,7 +228,6 @@ export default function Home() {
         )}
 
       </AnimatePresence>
-    </main>
+    </div>
   );
 }
-
