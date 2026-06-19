@@ -24,9 +24,11 @@ export default function Header() {
           <Image 
             src="/V4V_logo_black.jpeg"  
             alt="V4V Logo"
-            width={200}                
-            height={120}               
-            className="w-full h-auto object-contain" 
+            width={100}                
+            height={150}               
+            priority // 🔥 [수선 포인트]: LCP 최우선 로딩 적용
+            style={{ width: 'auto', height: 'auto' }} // 🔥 [수선 포인트]: 원본 비율 유지 적용
+            className="w-full object-contain" 
           />
         </Link>
       </div>
