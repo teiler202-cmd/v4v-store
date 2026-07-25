@@ -10,7 +10,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
 
   if (!product) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white gap-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white text-black gap-4">
         <p className="uppercase tracking-widest text-xs text-zinc-500">Product not found</p>
         <Link href="/" className="border border-white/20 px-6 py-3 text-xs uppercase hover:bg-white hover:text-black transition-colors">
           Return to Shop
@@ -20,7 +20,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
   }
 
   return (
-    <main className="min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black">
+    <main className="min-h-screen bg-white text-black font-sans selection:bg-white selection:text-black">
       
       {/* 🔥 임시 짭헤더를 뜯어내고 메인 페이지와 완벽하게 동일한 '찐 헤더' 장착! */}
       <Header />

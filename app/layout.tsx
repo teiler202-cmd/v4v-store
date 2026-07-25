@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       {/* 🔥 body에 flex, flex-col, min-h-screen을 추가하여 푸터를 하단에 고정시킬 뼈대를 만듭니다. */}
-      <body className={`${ibmPlexSans.className} bg-black text-white m-0 p-0 flex flex-col min-h-screen`}>
+      <body className={`${ibmPlexSans.className} bg-white text-black m-0 p-0 flex flex-col min-h-screen`}>
         {/* 전체 사이트(children)를 장바구니 메모리(CartProvider)로 감싸줍니다. */}
         <CartProvider>
           

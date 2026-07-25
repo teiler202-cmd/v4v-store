@@ -3,62 +3,71 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/components/CartProvider';
+import { Inter } from 'next/font/google';
 
-import { IBM_Plex_Mono } from 'next/font/google';
-
-const ibm = IBM_Plex_Mono({ 
-  subsets: ['latin'], 
-  weight: ['400', '500', '600', '700'] 
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export default function Header() {
   const { cart } = useCart();
   const totalItems = cart?.reduce((t, i) => t + i.quantity, 0) || 0;
 
   return (
-    <header className="w-full h-[60px] md:h-[90px] lg:h-[120px] flex justify-between items-center px-4 md:px-10 border-b border-zinc-900/50 bg-black text-white sticky top-0 z-40 transition-all duration-300">
+    <header className="w-full border-b border-zinc-200 bg-white text-black sticky top-0 z-40 transition-all duration-300">
       
-      {/* 1. 좌측: V4V 로고 */}
-      <div className="w-[20%] flex justify-start">
-        <Link href="/" className="hover:opacity-70 transition-opacity flex items-center w-[60px] md:w-[140px] lg:w-[200px]">
-          <Image 
-            src="/V4V_logo_black.jpeg"  
-            alt="V4V Logo"
-            width={100}                
-            height={150}               
-            priority // 🔥 [수선 포인트]: LCP 최우선 로딩 적용
-            style={{ width: 'auto', height: 'auto' }} // 🔥 [수선 포인트]: 원본 비율 유지 적용
-            className="w-full object-contain" 
-          />
-        </Link>
+      {/* 1열: 상단 (좌측 여백, 중앙 로고, 우측 장바구니) */}
+      <div className="flex justify-between items-center px-4 md:px-10 py-3 md:py-4">
+        
+        {/* 좌측: 작은 텍스트 */}
+        <div className="w-[33%] flex justify-start">
+          <span className={`${inter.className} text-[10px] text-gray-500 hidden md:block`}>
+           
+          </span>
+        </div>
+
+        {/* 중앙: V4V 로고 */}
+        <div className="w-[34%] flex justify-center">
+          <Link href="/" className="hover:opacity-60 transition-opacity flex justify-center items-center">
+            {/* 🔥 기존 로고 파일명을 새 그래픽 이미지로 변경 완료 */}
+            <Image 
+              src="/V4V_SlubTee_로고_정방향.png"  
+              alt="V4V Logo"
+              width={200} // 그래픽 비율을 고려해 width를 넉넉하게 확보 
+              height={40}               
+              priority 
+              // 🔥 슬림한 헤더 유지를 위해 높이를 24px로 제한
+              style={{ width: 'auto', height: '24px' }} 
+              className="object-contain" 
+            />
+          </Link>
+        </div>
+
+        {/* 우측: 장바구니 */}
+        <div className="w-[33%] flex justify-end items-center">
+          <Link href="/checkout" className={`${inter.className} text-[11px] md:text-sm font-medium hover:text-gray-500 transition-colors`}>
+            BAG ({totalItems})
+          </Link>
+        </div>
+        
       </div>
 
-      {/* 2. 중앙: 데스크톱 메뉴 
-          🔥 모바일에서는 양옆 px-1로 여백을 줄이고, 폰트 크기를 text-[10px]로 축소! 
-      */}
-      <nav className="w-[60%] flex flex-row justify-between items-center px-1 md:px-4 whitespace-nowrap">
-        <Link href="/" className={`${ibm.className} text-[10px] sm:text-[12px] md:text-[18px] lg:text-[25px] font-bold uppercase tracking-[0.05em] md:tracking-[0.1em] text-zinc-400 hover:text-white transition-all`}>
+      {/* 2열: 하단 메인 네비게이션 (메뉴) */}
+      <nav className="flex justify-center items-center pb-3 gap-6 md:gap-10 overflow-x-auto whitespace-nowrap px-4 scrollbar-hide">
+        <Link href="/" className={`${inter.className} text-[11px] md:text-[13px] font-normal hover:text-gray-500 transition-colors capitalize`}>
           Shop
         </Link>
-        <Link href="/archives" className={`${ibm.className} text-[10px] sm:text-[12px] md:text-[18px] lg:text-[25px] font-bold uppercase tracking-[0.05em] md:tracking-[0.1em] text-zinc-400 hover:text-white transition-all`}>
+        <Link href="/archives" className={`${inter.className} text-[11px] md:text-[13px] font-normal hover:text-gray-500 transition-colors capitalize`}>
           Archives
         </Link>
-        <Link href="/about" className={`${ibm.className} text-[10px] sm:text-[12px] md:text-[18px] lg:text-[25px] font-bold uppercase tracking-[0.05em] md:tracking-[0.1em] text-zinc-400 hover:text-white transition-all`}>
+        <Link href="/essay" className={`${inter.className} text-[11px] md:text-[13px] font-normal hover:text-gray-500 transition-colors capitalize`}>
+          Essay
+        </Link>
+        <Link href="/about" className={`${inter.className} text-[11px] md:text-[13px] font-normal hover:text-gray-500 transition-colors capitalize`}>
           About
         </Link>
-        <Link href="/contact" className={`${ibm.className} text-[10px] sm:text-[12px] md:text-[18px] lg:text-[25px] font-bold uppercase tracking-[0.05em] md:tracking-[0.1em] text-zinc-400 hover:text-white transition-all`}>
+        <Link href="/contact" className={`${inter.className} text-[11px] md:text-[13px] font-normal hover:text-gray-500 transition-colors capitalize`}>
           Contact
         </Link>
       </nav>
-
-      {/* 3. 우측: 장바구니 
-          🔥 모바일 폰트 text-[12px]로 축소 
-      */}
-      <div className="w-[20%] flex justify-end items-center">
-        <Link href="/checkout" className={`${ibm.className} text-[12px] md:text-[18px] lg:text-[25px] font-black text-white hover:text-zinc-400 uppercase tracking-[0.05em] md:tracking-[0.1em] transition-all flex items-center whitespace-nowrap`}>
-          BAG [{totalItems}]
-        </Link>
-      </div>
       
     </header>
   );

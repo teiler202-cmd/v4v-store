@@ -11,7 +11,7 @@ const nanum = Nanum_Myeongjo({ weight: '800', preload: false });
 
 export default function ContactPage() {
   return (
-    <div className="w-full bg-black text-white select-none min-h-screen flex flex-col items-center overflow-hidden">
+    <div className="w-full bg-white text-black select-none min-h-screen flex flex-col items-center overflow-hidden">
       <Header />
       
       {/* 최상단 타이틀 영역 */}
@@ -55,7 +55,7 @@ export default function ContactPage() {
             </div>
             <a 
               href="mailto:cs@vision4visionary.com" 
-              className={`${inter.className} text-lg md:text-xl font-medium mt-2 text-white hover:text-zinc-500 transition-colors duration-500 w-fit`}
+              className={`${inter.className} text-lg md:text-xl font-medium mt-2 text-black hover:text-zinc-500 transition-colors duration-500 w-fit`}
             >
               cs@vision4visionary.com
             </a>
@@ -73,7 +73,7 @@ export default function ContactPage() {
             </div>
             <a 
               href="mailto:partnership@vision4visionary.com" 
-              className={`${inter.className} text-lg md:text-xl font-medium mt-2 text-white hover:text-zinc-500 transition-colors duration-500 w-fit`}
+              className={`${inter.className} text-lg md:text-xl font-medium mt-2 text-black hover:text-zinc-500 transition-colors duration-500 w-fit`}
             >
               partnership@vision4visionary.com
             </a>

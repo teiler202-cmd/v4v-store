@@ -57,13 +57,13 @@ export default async function PolicyPage(props: { params: Promise<{ type: string
   if (type === 'contact') {
     return (
       <div className="max-w-4xl mx-auto px-6 py-32 md:py-40 text-zinc-300">
-        <h1 className="text-3xl font-bold mb-10 text-white">Contact Information</h1>
+        <h1 className="text-3xl font-bold mb-10 text-black">Contact Information</h1>
         <div className="space-y-4 font-light tracking-wide leading-relaxed">
           <p>비전포비저너리(V4V)를 찾아주셔서 감사합니다. 상품, 배송, 결제 등과 관련된 문의 사항은 아래의 공식 창구를 통해 연락해 주시면 신속하고 친절하게 안내해 드리겠습니다.</p>
           <br/>
-          <p><strong className="text-white">상호명:</strong> 비전포비저너리 (V4V)</p>
-          <p><strong className="text-white">이메일:</strong> cs@v4v.com</p>
-          <p><strong className="text-white">운영 시간:</strong> 평일 10:00 - 17:00 (점심시간 12:00 - 13:00) / 주말 및 공휴일 휴무</p>
+          <p><strong className="text-black">상호명:</strong> 비전포비저너리 (V4V)</p>
+          <p><strong className="text-black">이메일:</strong> cs@v4v.com</p>
+          <p><strong className="text-black">운영 시간:</strong> 평일 10:00 - 17:00 (점심시간 12:00 - 13:00) / 주말 및 공휴일 휴무</p>
         </div>
       </div>
     );
@@ -79,11 +79,11 @@ export default async function PolicyPage(props: { params: Promise<{ type: string
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-32 md:py-40">
-      <h1 className="text-3xl md:text-4xl font-bold mb-12 text-white">{policy.title}</h1>
+      <h1 className="text-3xl md:text-4xl font-bold mb-12 text-black">{policy.title}</h1>
       
       {/* 쇼피파이에서 받아온 HTML 텍스트를 V4V 감성에 맞게 렌더링 */}
       <div 
-        className="text-zinc-400 font-light leading-loose space-y-6 [&>h1]:text-white [&>h1]:text-2xl [&>h1]:font-semibold [&>h1]:mt-10 [&>h2]:text-white [&>h2]:text-xl [&>h2]:mt-8 [&>p]:mb-4"
+        className="text-zinc-400 font-light leading-loose space-y-6 [&>h1]:text-black [&>h1]:text-2xl [&>h1]:font-semibold [&>h1]:mt-10 [&>h2]:text-black [&>h2]:text-xl [&>h2]:mt-8 [&>p]:mb-4"
         dangerouslySetInnerHTML={{ __html: policy.body }} 
       />
     </div>

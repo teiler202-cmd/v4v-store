@@ -66,7 +66,7 @@ export default function ArchivesPage() {
   const currentData = archiveData[currentIndex];
 
   return (
-    <main className="min-h-screen bg-black text-white selection:bg-white selection:text-black pb-32">
+    <main className="min-h-screen bg-white text-black selection:bg-white selection:text-black pb-32">
       <Header />
 
       <div className="pt-20 max-w-[1400px] mx-auto px-6 md:px-10">
@@ -79,7 +79,7 @@ export default function ArchivesPage() {
         </div>
 
         <div className="flex justify-center items-center gap-8 mb-20 border-y border-zinc-900/50 py-4">
-          <button onClick={prevSeason} className={`${ibm.className} text-zinc-500 hover:text-white transition-colors text-lg px-4`}>&lt;</button>
+          <button onClick={prevSeason} className={`${ibm.className} text-zinc-500 hover:text-black transition-colors text-lg px-4`}>&lt;</button>
           <motion.div 
             key={currentData.season} 
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
@@ -87,7 +87,7 @@ export default function ArchivesPage() {
           >
             {currentData.season}
           </motion.div>
-          <button onClick={nextSeason} className={`${ibm.className} text-zinc-500 hover:text-white transition-colors text-lg px-4`}>&gt;</button>
+          <button onClick={nextSeason} className={`${ibm.className} text-zinc-500 hover:text-black transition-colors text-lg px-4`}>&gt;</button>
         </div>
 
         <AnimatePresence mode="wait">
@@ -126,7 +126,7 @@ export default function ArchivesPage() {
                     />
                   )}
                   
-                  <div className={`${ibm.className} absolute bottom-2 right-2 md:bottom-4 md:right-4 text-[8px] md:text-[10px] text-white opacity-0 group-hover:opacity-100 tracking-widest transition-opacity duration-500 uppercase mix-blend-difference`}>
+                  <div className={`${ibm.className} absolute bottom-2 right-2 md:bottom-4 md:right-4 text-[8px] md:text-[10px] text-black opacity-0 group-hover:opacity-100 tracking-widest transition-opacity duration-500 uppercase mix-blend-difference`}>
                     REF. {String(item.id).padStart(3, '0')} {item.type === 'video' && '(VID)'} {item.type === 'youtube' && '(YT)'}
                   </div>
                 </div>

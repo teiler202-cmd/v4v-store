@@ -27,7 +27,7 @@ const slideUpVariant = (targetOpacity: number, delayTime: number): Variants => (
 
 export default function AboutPage() {
   return (
-    <div className="w-full bg-black text-white select-none min-h-screen flex flex-col items-center overflow-hidden">
+    <div className="w-full bg-white text-black select-none min-h-screen flex flex-col items-center overflow-hidden">
       <Header />
       
       {/* 🔥 [수선 1]: 타이틀 하단 여백 대폭 축소 (mb-40 -> mb-24) */}

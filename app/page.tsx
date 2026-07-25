@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useCart } from '@/components/CartProvider';
 import Header from '@/components/Header';
 import { IBM_Plex_Mono } from 'next/font/google';
+import Image from 'next/image'; // 🔥 [추가]: Next.js 이미지 컴포넌트 임포트
 
 const ibm = IBM_Plex_Mono({ 
   subsets: ['latin'], 
@@ -93,57 +94,40 @@ export default function Home() {
   const handleLogoClick = () => {
     if (isLogoExploded) return;
     setIsLogoExploded(true); 
-    setTimeout(() => setStep('quote'), 2200); 
+    setTimeout(() => setStep('quote'), 1200); // 텍스트 폭발 효과가 빠졌으므로 대기 시간을 조금 줄여 속도감을 높임
   };
 
-  if (!isInitialized) return <div className="min-h-screen bg-black w-full" />;
+  if (!isInitialized) return <div className="min-h-screen bg-white w-full" />;
 
   return (
-    <div className="w-full bg-black text-white select-none font-sans min-h-screen">
+    <div className="w-full bg-white text-black select-none font-sans min-h-screen">
       <AnimatePresence mode="wait">
         
         {/* 오프닝 1: 로고 오프닝 (fixed inset-0 z-50으로 화면 전체를 절대 좌표로 덮음) */}
         {step === 'logo' && (
           <motion.div
             key="logo-step"
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black cursor-pointer"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white cursor-pointer"
             onClick={handleLogoClick}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="flex">
-              {["V", "4", "V"].map((char, index) => (
-                <span key={index} className="relative inline-flex justify-center items-center">
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={isLogoExploded ? { opacity: 0, scale: 0.9, filter: "blur(12px)" } : { opacity: 1, scale: 1, filter: "blur(0px)" }}
-                    transition={{ duration: isLogoExploded ? 1.0 : 1.2, ease: "easeOut" }}
-                    className="text-[100px] md:text-[180px] font-bold tracking-tighter leading-none"
-                  >
-                    {char}
-                  </motion.span>
-
-                  {isLogoExploded && [...Array(100)].map((_, i) => {
-                    const angle = Math.random() * Math.PI * 2;
-                    const distance = 80 + Math.random() * 400; 
-                    const tx = Math.cos(angle) * distance;
-                    const ty = Math.sin(angle) * distance;
-                    const size = 1.5 + Math.random() * 3; 
-
-                    return (
-                      <motion.span
-                        key={i}
-                        initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-                        animate={{ x: tx, y: ty, opacity: 0, scale: 0 }}
-                        transition={{ duration: 1.5 + Math.random() * 1.5, ease: "easeOut" }}
-                        className="absolute bg-white rounded-full"
-                        style={{ width: size, height: size }}
-                      />
-                    );
-                  })}
-                </span>
-              ))}
-            </div>
+            {/* 🔥 기존 텍스트(V4V) 코드 삭제 및 이미지 코드로 교체 완료 */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={isLogoExploded ? { opacity: 0, scale: 0.95, filter: "blur(10px)" } : { opacity: 1, scale: 1, filter: "blur(0px)" }}
+              transition={{ duration: isLogoExploded ? 1.0 : 1.2, ease: "easeOut" }}
+              className="flex justify-center items-center"
+            >
+              <Image 
+                src="/V4V_SlubTee_로고_정방향.png"
+                alt="V4V Landing Graphic"
+                width={800}
+                height={400}
+                priority
+                className="w-auto h-auto max-w-[90vw] md:max-w-3xl object-contain"
+              />
+            </motion.div>
           </motion.div>
         )}
 
@@ -151,7 +135,7 @@ export default function Home() {
         {step === 'quote' && (
           <motion.div
             key="quote-step"
-            className="fixed inset-0 z-50 flex flex-wrap items-center justify-center bg-black px-10"
+            className="fixed inset-0 z-50 flex flex-wrap items-center justify-center bg-white px-10"
             exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.8 }}
           >
             <motion.div

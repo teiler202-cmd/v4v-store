@@ -11,7 +11,7 @@ export default function CartCounter() {
 
   return (
     // 나중에 /checkout 페이지를 만들면 이곳으로 이동하게 됩니다.
-    <Link href="/checkout" className="text-[10px] tracking-[0.3em] uppercase text-zinc-400 hover:text-white transition-colors cursor-pointer font-bold">
+    <Link href="/checkout" className="text-[10px] tracking-[0.3em] uppercase text-zinc-400 hover:text-black transition-colors cursor-pointer font-bold">
       BAG ({totalItems})
     </Link>
   );
