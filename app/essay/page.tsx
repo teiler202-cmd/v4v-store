@@ -1,21 +1,16 @@
 import React from 'react';
 import Header from '@/components/Header';
-import { IBM_Plex_Mono, Nanum_Myeongjo } from 'next/font/google';
+import { IBM_Plex_Mono } from 'next/font/google';
 
+// 🔥 1. 폰트를 IBM Plex Mono로 통일 (명조체 제거)
 const ibm = IBM_Plex_Mono({ 
   subsets: ['latin'], 
   weight: ['400', '500', '600', '700'] 
 });
 
-const nanum = Nanum_Myeongjo({ 
-  weight: ['400', '700', '800'],
-  subsets: ['latin'] 
-});
-
-// 🔥 1. 에세이 데이터 목록 (가장 위에 있는 것이 최신 글입니다)
 const essays = [
   {
-    id: 2, // 고유 번호
+    id: 2,
     date: "July 21, 2026",
     title: "시선을 넘어선 비전,\n우리가 세상을 바라보는 방식",
     content: (
@@ -29,9 +24,10 @@ const essays = [
           블랙이라는 색이 모든 빛을 흡수하듯, 우리의 디자인은 불필요한 장식을 덜어내고 본질만을 남긴다.
         </p>
         
-        <div className="w-full py-10">
-          <div className="w-full h-96 bg-zinc-900 flex items-center justify-center text-zinc-600 text-sm border border-zinc-800">
-            [여기에 시크한 흑백 이미지가 들어갑니다]
+        {/* 화이트 테마에 맞게 이미지 플레이스홀더 색상도 밝은 톤으로 수정 */}
+        <div className="w-full py-8">
+          <div className="w-full h-96 bg-zinc-100 flex items-center justify-center text-zinc-400 text-xs tracking-widest border border-zinc-200 uppercase font-medium">
+            [ Image Placeholder ]
           </div>
         </div>
         
@@ -42,7 +38,7 @@ const essays = [
     )
   },
   {
-    id: 1, // 이전 글
+    id: 1,
     date: "July 14, 2026",
     title: "블랙, 모든 빛을 흡수하는 침묵",
     content: (
@@ -64,29 +60,33 @@ export default function EssayPage() {
       <Header />
       
       <main 
-        className="min-h-screen bg-white text-black flex flex-col items-center"
-        style={{ fontFamily: `"${ibm.style.fontFamily}", "${nanum.style.fontFamily}", serif` }}
+        // 폰트 클래스 적용 및 배경 설정
+        className={`min-h-screen bg-white text-zinc-900 flex flex-col items-center ${ibm.className}`}
       >
         
-        {/* 🔥 2. 배열된 에세이들을 순서대로 화면에 렌더링 (Mapping) */}
         {essays.map((essay) => (
           <section 
             key={essay.id} 
-            className="w-full px-6 py-32 border-b border-zinc-900 flex flex-col items-center last:border-0"
+            // 화이트 테마에 맞게 구분선(border)을 옅은 색(zinc-200)으로 변경
+            className="w-full px-6 py-24 md:py-32 border-b border-zinc-200 flex flex-col items-center last:border-0"
           >
             {/* 에세이 헤더 */}
-            <div className="max-w-2xl w-full text-center mb-20">
-              <h1 className="text-sm tracking-[0.3em] text-gray-400 mb-4 uppercase">
-                V4V Journal
+            <div className="max-w-xl w-full text-center mb-16">
+              <h1 className="text-[10px] md:text-xs tracking-[0.2em] text-zinc-500 mb-4 uppercase font-medium">
+                visionary's essay
               </h1>
-              <h2 className="text-3xl font-light tracking-wide leading-snug whitespace-pre-line">
+              {/* 제목: 자간(tracking-tight)과 행간(leading-[1.3])을 좁혀 밀도 높게 연출 */}
+              <h2 className="text-xl md:text-2xl font-semibold tracking-tight leading-[1.3] whitespace-pre-line text-zinc-900">
                 {essay.title}
               </h2>
-              <p className="text-xs text-gray-500 mt-8">{essay.date}</p>
+              <p className="text-[10px] md:text-xs tracking-widest text-zinc-400 mt-6 uppercase">
+                {essay.date}
+              </p>
             </div>
 
             {/* 에세이 본문 */}
-            <article className="max-w-2xl w-full text-gray-300 leading-loose tracking-wide space-y-8">
+            {/* 본문: text-zinc-800으로 짙은 회색 적용, 자간 좁힘, 행간 적절히 조절 */}
+            <article className="max-w-xl w-full text-zinc-800 text-sm md:text-[15px] leading-[1.6] tracking-tight space-y-6 flex flex-col">
               {essay.content}
             </article>
           </section>
