@@ -120,7 +120,7 @@ export default function Home() {
               className="flex justify-center items-center"
             >
               <Image 
-                src="/V4V_SlubTee_로고_정방향.png"
+                src="/V4V_SlubTee_로고_정방향 copy.png"
                 alt="V4V Landing Graphic"
                 width={800}
                 height={400}
