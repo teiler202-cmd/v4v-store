@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useCart } from '@/components/CartProvider';
 import Header from '@/components/Header';
 import { IBM_Plex_Mono } from 'next/font/google';
-import Image from 'next/image'; // 🔥 [추가]: Next.js 이미지 컴포넌트 임포트
+import Image from 'next/image';
 
 const ibm = IBM_Plex_Mono({ 
   subsets: ['latin'], 
@@ -53,16 +53,13 @@ export default function Home() {
     }
   }, [step]);
 
-  // 🔥 [추가된 핵심 코드]: 오프닝 중 푸터(Footer) 투명인간 만들기
   useEffect(() => {
     const footer = document.querySelector('footer');
     
     if (footer) {
-      // step이 'home'일 때만 보이게 하고, 오프닝(logo, quote)일 때는 숨깁니다.
       footer.style.display = step === 'home' ? 'block' : 'none';
     }
 
-    // 컴포넌트가 언마운트(다른 페이지로 이동)될 때는 푸터 상태를 원래대로 복구
     return () => {
       if (footer) footer.style.display = 'block';
     };
@@ -77,24 +74,30 @@ export default function Home() {
     }
   }, [step]);
 
+  // 🔥 [수정된 핵심 코드]: OurManna API를 통해 매일 고정된 '오늘의 말씀'을 불러옵니다.
   useEffect(() => {
-    const fetchRandomVerse = async () => {
+    const fetchDailyVerse = async () => {
       try {
-        const response = await fetch('https://labs.bible.org/api/?passage=random&type=json');
+        const response = await fetch('https://beta.ourmanna.com/api/v1/get?format=json&order=daily');
         const data = await response.json();
-        const randomPick = data[0];
-        setVerse(`${randomPick.text} - ${randomPick.bookname} ${randomPick.chapter}:${randomPick.verse}`);
+        
+        // OurManna API의 JSON 응답 구조에 맞춰 텍스트와 구절 정보를 가져옵니다.
+        const verseText = data.verse.details.text;
+        const verseRef = data.verse.details.reference;
+        
+        setVerse(`${verseText} - ${verseRef}`);
       } catch (error) {
+        // 네트워크 에러 시 대체 기본 구절
         setVerse("I can do all things through him who strengthens me. - Philippians 4:13");
       }
     };
-    fetchRandomVerse();
+    fetchDailyVerse();
   }, []);
 
   const handleLogoClick = () => {
     if (isLogoExploded) return;
     setIsLogoExploded(true); 
-    setTimeout(() => setStep('quote'), 1200); // 텍스트 폭발 효과가 빠졌으므로 대기 시간을 조금 줄여 속도감을 높임
+    setTimeout(() => setStep('quote'), 1200); 
   };
 
   if (!isInitialized) return <div className="min-h-screen bg-white w-full" />;
@@ -103,7 +106,7 @@ export default function Home() {
     <div className="w-full bg-white text-black select-none font-sans min-h-screen">
       <AnimatePresence mode="wait">
         
-        {/* 오프닝 1: 로고 오프닝 (fixed inset-0 z-50으로 화면 전체를 절대 좌표로 덮음) */}
+        {/* 오프닝 1: 로고 오프닝 */}
         {step === 'logo' && (
           <motion.div
             key="logo-step"
@@ -112,7 +115,6 @@ export default function Home() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
           >
-            {/* 🔥 기존 텍스트(V4V) 코드 삭제 및 이미지 코드로 교체 완료 */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={isLogoExploded ? { opacity: 0, scale: 0.95, filter: "blur(10px)" } : { opacity: 1, scale: 1, filter: "blur(0px)" }}
@@ -131,7 +133,7 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* 오프닝 2: 철학 문구 (fixed로 화면 위에 띄워두기) */}
+        {/* 오프닝 2: 철학 문구 */}
         {step === 'quote' && (
           <motion.div
             key="quote-step"
@@ -156,7 +158,7 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* 메인 3: 홈 화면 (일반 문서 흐름) */}
+        {/* 메인 3: 홈 화면 */}
         {step === 'home' && (
           <motion.div
             key="home-step" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}

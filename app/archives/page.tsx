@@ -41,19 +41,6 @@ const archiveData = [
       { id: 8, type: 'image', src: 'https://i.pinimg.com/1200x/4b/fc/92/4bfc92f02b4f346c96608d65a3daf4f4.jpg', aspect: 'aspect-[1/1]' },
       { id: 9, type: 'image', src: 'https://i.pinimg.com/736x/61/bd/b0/61bdb0e6e16865f8b77f4a52ac8bb9f4.jpg', aspect: 'aspect-[1/1]' },
     ]
-  },
-  {
-    id: 'szn-2',
-    season: 'SZN 2',
-    subtitle: 'EXPANSION',
-    contentEn: "Pushing the boundaries further. \n\nSZN 2 delves deeper into the interplay between light and shadow. We introduced new textiles and utilitarian silhouettes that adapt to the wearer's environment.\n\nIt is an evolution of our core philosophy: Vision in Motion, Performance in Action. Less noise, more intent.",
-    contentKo: "", // SZN 2는 아직 한글 텍스트가 없으므로 빈칸 유지
-    media: [
-      { id: 6, type: 'video', src: 'https://cdn.pixabay.com/video/2021/08/04/83893-585352697_tiny.mp4', aspect: 'aspect-video', fullWidth: true },
-      { id: 7, type: 'image', src: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=2000&auto=format&fit=crop', aspect: 'aspect-[4/5]' },
-      { id: 8, type: 'image', src: 'https://images.unsplash.com/photo-1505022610485-0249ba5b3675?q=80&w=2000&auto=format&fit=crop', aspect: 'aspect-[4/5]' },
-      { id: 9, type: 'image', src: 'https://images.unsplash.com/photo-1542315147-3803138863f6?q=80&w=2000&auto=format&fit=crop', aspect: 'aspect-[4/5]' },
-    ]
   }
 ];
 
@@ -74,7 +61,7 @@ export default function ArchivesPage() {
         <div className="mb-12 flex flex-col items-center justify-center text-center gap-4">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase">Archives</h1>
           <p className={`${ibm.className} text-xs text-zinc-500 tracking-[0.2em] max-w-2xl uppercase`}>
-            A curated collection of inspirations, past forms, and the visual language of V4V.
+            A curated collection of inspirations, past forms, and the visual language of VISION FOR VISIONARY.
           </p>
         </div>
 

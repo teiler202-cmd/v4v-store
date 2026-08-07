@@ -1,36 +1,33 @@
-'use server';
+'use server'; // [핵심]: 이 파일 안의 함수는 무조건 서버(백엔드)에서만 실행하라는 엄격한 명령어입니다.
 
 export async function createCheckout(lineItems: { variantId: string; quantity: number }[]) {
-  // [수정 핵심]: 옛날 checkoutCreate 대신 최신 cartCreate 문법을 사용합니다.
   const query = `
-    mutation cartCreate($input: CartInput) {
-      cartCreate(input: $input) {
-        cart {
-          checkoutUrl
+    mutation checkoutCreate($input: CheckoutCreateInput!) {
+      checkoutCreate(input: $input) {
+        checkout {
+          id
+          webUrl
         }
-        userErrors {
+        checkoutUserErrors {
           message
         }
       }
     }
   `;
 
-  // [수정 핵심]: 쇼피파이가 요구하는 최신 데이터 규격(merchandiseId)으로 이름을 맞춰서 보냅니다.
   const variables = {
     input: {
-      lines: lineItems.map((item) => ({
-        merchandiseId: item.variantId,
-        quantity: item.quantity,
-      })),
+      lineItems,
     },
   };
 
   try {
-    const domain = (process.env.SHOPIFY_STORE_DOMAIN || process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN) as string;
-    const storefrontAccessToken = (process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN) as string;
+    // 이제 서버에서 실행되므로 process.env를 정상적으로 읽어올 수 있습니다.
+    const domain = process.env.SHOPIFY_STORE_DOMAIN as string;
+    const storefrontAccessToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN as string;
     
     if (!domain || !storefrontAccessToken) {
-      console.error("환경변수가 설정되지 않았습니다.");
+      console.error("환경변수가 설정되지 않았습니다. .env.local 파일을 확인하세요.");
       return null;
     }
 
@@ -43,7 +40,7 @@ export async function createCheckout(lineItems: { variantId: string; quantity: n
         'X-Shopify-Storefront-Access-Token': storefrontAccessToken,
       },
       body: JSON.stringify({ query, variables }),
-      cache: 'no-store', // 결제창은 매번 새로 만들어야 하므로 캐시 방지
+      cache: 'no-store', // 결제창은 매번 새로 생성해야 함
     });
 
     const body = await response.json();
@@ -53,13 +50,11 @@ export async function createCheckout(lineItems: { variantId: string; quantity: n
       return null;
     }
 
-    // 최신 API 규격에 맞춰 checkoutUrl을 뽑아냅니다.
-    const checkoutUrl = body.data?.cartCreate?.cart?.checkoutUrl;
-    
-    if (checkoutUrl) {
-      return checkoutUrl; // 🚀 성공! 쇼피파이 결제창 URL 리턴
+    const checkout = body.data?.checkoutCreate?.checkout;
+    if (checkout) {
+      return checkout.webUrl; // 성공 시 결제창 URL 반환
     } else {
-      console.error("장바구니(결제창) 생성 실패:", body.data?.cartCreate?.userErrors);
+      console.error("결제창 생성 실패:", body.data?.checkoutCreate?.checkoutUserErrors);
       return null;
     }
   } catch (error) {
