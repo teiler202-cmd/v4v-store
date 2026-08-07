@@ -74,20 +74,17 @@ export default function Home() {
     }
   }, [step]);
 
-  // 🔥 [수정된 핵심 코드]: OurManna API를 통해 매일 고정된 '오늘의 말씀'을 불러옵니다.
   useEffect(() => {
     const fetchDailyVerse = async () => {
       try {
         const response = await fetch('https://beta.ourmanna.com/api/v1/get?format=json&order=daily');
         const data = await response.json();
         
-        // OurManna API의 JSON 응답 구조에 맞춰 텍스트와 구절 정보를 가져옵니다.
         const verseText = data.verse.details.text;
         const verseRef = data.verse.details.reference;
         
         setVerse(`${verseText} - ${verseRef}`);
       } catch (error) {
-        // 네트워크 에러 시 대체 기본 구절
         setVerse("I can do all things through him who strengthens me. - Philippians 4:13");
       }
     };
@@ -137,18 +134,21 @@ export default function Home() {
         {step === 'quote' && (
           <motion.div
             key="quote-step"
-            className="fixed inset-0 z-50 flex flex-wrap items-center justify-center bg-white px-10"
+            // 🔥 [수정 1]: px-10을 px-2로 줄여 모바일 좌우 공간을 최대한 확보했습니다.
+            className="fixed inset-0 z-50 flex items-center justify-center bg-white px-2 md:px-10"
             exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.8 }}
           >
             <motion.div
               variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
-              initial="hidden" animate="visible" className="flex flex-wrap justify-center max-w-5xl"
+              // 🔥 [수정 2]: flex-wrap을 없애고 whitespace-nowrap을 추가하여 무조건 가로 한 줄로 나오게 강제했습니다.
+              initial="hidden" animate="visible" className="flex justify-center max-w-5xl whitespace-nowrap overflow-hidden"
             >
               {quoteText.split("").map((char, index) => (
                 <motion.span
                   key={index} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
                   transition={{ duration: 0.3, ease: "linear" }}
-                  className="text-[18px] md:text-[45px] font-medium tracking-[-0.1em] uppercase inline-block"
+                  // 🔥 [수정 3]: 모바일 사이즈를 세밀하게 쪼개어 가장 작은 아이폰 SE부터 맥스까지 가로 한 줄에 쏙 들어가도록 맞췄습니다.
+                  className="text-[10px] min-[390px]:text-[12px] sm:text-[14px] md:text-[45px] font-medium tracking-[-0.1em] uppercase inline-block"
                   style={{ minWidth: char === " " ? "0.3em" : "auto" }}
                 >
                   {char}
