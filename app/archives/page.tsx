@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Header from '@/components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
-// 🔥 나눔명조체 추가 임포트
 import { IBM_Plex_Mono, Nanum_Myeongjo } from 'next/font/google';
 
 const ibm = IBM_Plex_Mono({ 
@@ -11,7 +10,6 @@ const ibm = IBM_Plex_Mono({
   weight: ['400', '500', '600', '700'] 
 });
 
-// 🔥 나눔명조체 설정
 const nanumMyeongjo = Nanum_Myeongjo({
   weight: ['400', '700', '800'],
   subsets: ['latin'],
@@ -52,6 +50,37 @@ export default function ArchivesPage() {
 
   const currentData = archiveData[currentIndex];
 
+  // 🔥 이미지와 비디오를 렌더링하는 공통 헬퍼 함수
+  const renderMediaItem = (item: any) => (
+    <div
+      key={item.id}
+      // break-inside-avoid 속성으로 masonry 레이아웃 안에서 이미지가 잘리지 않게 방지
+      className={`relative w-full bg-zinc-900 overflow-hidden group cursor-crosshair break-inside-avoid ${item.aspect}`}
+    >
+      {item.type === 'youtube' ? (
+        <iframe 
+          src={item.src}
+          allow="autoplay; fullscreen; picture-in-picture"
+          className="w-full h-full object-cover opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 ease-out pointer-events-none"
+        />
+      ) : item.type === 'video' ? (
+        <video 
+          src={item.src} autoPlay loop muted playsInline 
+          className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
+        />
+      ) : (
+        <img 
+          src={item.src} alt={`${currentData.season} media ${item.id}`} 
+          className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
+        />
+      )}
+      
+      <div className={`${ibm.className} absolute bottom-2 right-2 md:bottom-4 md:right-4 text-[8px] md:text-[10px] text-white opacity-0 group-hover:opacity-100 tracking-widest transition-opacity duration-500 uppercase mix-blend-difference`}>
+        REF. {String(item.id).padStart(3, '0')} {item.type === 'video' && '(VID)'} {item.type === 'youtube' && '(YT)'}
+      </div>
+    </div>
+  );
+
   return (
     <main className="min-h-screen bg-white text-black selection:bg-white selection:text-black pb-32">
       <Header />
@@ -65,7 +94,7 @@ export default function ArchivesPage() {
           </p>
         </div>
 
-        <div className="flex justify-center items-center gap-8 mb-20 border-y border-zinc-900/50 py-4">
+        <div className="flex justify-center items-center gap-8 mb-20 border-y border-zinc-900/10 py-4">
           <button onClick={prevSeason} className={`${ibm.className} text-zinc-500 hover:text-black transition-colors text-lg px-4`}>&lt;</button>
           <motion.div 
             key={currentData.season} 
@@ -87,57 +116,42 @@ export default function ArchivesPage() {
             className="flex flex-col md:flex-row gap-12 lg:gap-20"
           >
             
-            {/* 🔥 [핵심 수정]: 무조건 2열(grid-cols-2)로 시작하게 만듦. 모바일에서는 여백(gap)을 살짝 줄임 */}
-            <div className="w-full md:w-[65%] grid grid-cols-2 gap-2 md:gap-6">
-              {currentData.media.map((item) => (
-                <div
-                  key={item.id}
-                  // 🔥 [핵심 수정]: fullWidth 속성이 있는 영상만 무조건 2칸(col-span-2)을 다 차지하게 강제 설정
-                  className={`relative w-full bg-zinc-900 overflow-hidden group cursor-crosshair ${item.fullWidth ? 'col-span-2' : 'col-span-1'} ${item.aspect}`}
-                >
-                  {item.type === 'youtube' ? (
-                    <iframe 
-                      src={item.src}
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      className="w-full h-full object-cover opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 ease-out pointer-events-none"
-                    />
-                  ) : item.type === 'video' ? (
-                    <video 
-                      src={item.src} autoPlay loop muted playsInline 
-                      className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
-                    />
-                  ) : (
-                    <img 
-                      src={item.src} alt={`${currentData.season} media ${item.id}`} 
-                      className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
-                    />
-                  )}
-                  
-                  <div className={`${ibm.className} absolute bottom-2 right-2 md:bottom-4 md:right-4 text-[8px] md:text-[10px] text-black opacity-0 group-hover:opacity-100 tracking-widest transition-opacity duration-500 uppercase mix-blend-difference`}>
-                    REF. {String(item.id).padStart(3, '0')} {item.type === 'video' && '(VID)'} {item.type === 'youtube' && '(YT)'}
-                  </div>
-                </div>
-              ))}
+            {/* 좌측: 미디어 레이아웃 영역 */}
+            <div className="w-full md:w-[65%] flex flex-col gap-2 md:gap-4">
+              
+              {/* 1. 풀사이즈 영상 (가장 상단에 단독 배치) */}
+              {currentData.media.filter(item => item.fullWidth).map(renderMediaItem)}
+
+              {/* 🔥 2. 빈틈없이 딱 붙는 Masonry(핀터레스트 스타일) 컬럼 레이아웃 적용 */}
+              <div className="columns-2 gap-2 md:gap-4 space-y-2 md:space-y-4">
+                {currentData.media.filter(item => !item.fullWidth).map(renderMediaItem)}
+              </div>
+
             </div>
 
+            {/* 우측: 텍스트 영역 */}
             <div className="w-full md:w-[35%] relative">
               <div className="sticky top-40 flex flex-col gap-6">
-                <h2 className={`${ibm.className} text-sm tracking-[0.2em] text-zinc-400 uppercase`}>
+                
+                {/* 텍스트 컬러: text-zinc-900으로 짙게 변경 */}
+                <h2 className={`${ibm.className} text-sm tracking-[0.2em] text-zinc-900 uppercase font-medium`}>
                   {currentData.subtitle}
                 </h2>
-                <div className="w-8 h-[1px] bg-white"></div>
                 
-                {/* 상단 영문 텍스트 */}
+                {/* 텍스트 하단 작은 실선 색상을 다크 테마(white)에서 라이트 테마(zinc-900)로 변경 */}
+                <div className="w-8 h-[1px] bg-zinc-900"></div>
+                
+                {/* 상단 영문 텍스트: text-zinc-800 적용으로 가독성 개선 */}
                 {currentData.contentEn && (
-                  <p className="text-sm md:text-base font-light text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm md:text-base font-light text-zinc-800 leading-relaxed whitespace-pre-wrap">
                     {currentData.contentEn}
                   </p>
                 )}
 
-                {/* 하단 국문 텍스트 (나눔명조체 적용) */}
+                {/* 하단 국문 텍스트: text-zinc-600으로 영문보다는 살짝 옅게 주어 위계성 형성 */}
                 {currentData.contentKo && (
-                  <div className={`mt-4 pt-8 border-t border-zinc-900/50 ${nanumMyeongjo.className}`}>
-                    <p className="text-[13px] md:text-[15px] font-light text-zinc-400 leading-[1.8] whitespace-pre-wrap break-keep">
+                  <div className={`mt-4 pt-8 border-t border-zinc-200 ${nanumMyeongjo.className}`}>
+                    <p className="text-[13px] md:text-[15px] font-medium text-zinc-600 leading-[1.8] whitespace-pre-wrap break-keep">
                       {currentData.contentKo}
                     </p>
                   </div>
