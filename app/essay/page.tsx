@@ -2,7 +2,6 @@ import React from 'react';
 import Header from '@/components/Header';
 import { IBM_Plex_Mono } from 'next/font/google';
 
-// 🔥 1. 폰트를 IBM Plex Mono로 통일
 const ibm = IBM_Plex_Mono({ 
   subsets: ['latin'], 
   weight: ['400', '500', '600', '700'] 
@@ -20,14 +19,11 @@ const essays = [
         </p>
         
         <p>
-          이것은 저 자신이자, 우리 브랜드가 존재하는 아이디어의 근원입니다.
+          이것은 제 인생에 가장 많은 도움을 준 스승 혹은 은인께서 제게 눈 뜨게 해준 진리이자, 저 자신이며, 우리 브랜드가 존재하는 아이디어의 근원입니다.
         </p>
         
         <p>
           어려서부터 공교육 아래에서 창의적으로 문제를 해결하는 방법 대신, 주어진 정답을 도출하는 방법을 학습하고 이런 교육 방식은 대학 기관에서도 크게 다르지 않다는 걸 느끼며 많은 회의감이 들었습니다.<br />
-        </p>
-        
-        <p>
           어릴 적 순수했던 꿈은 점점 성장하며, 시도해본 적도 없는데 ‘현실’이라는 이름으로 다가와 망각을 하게 만들고 이것은 저 개인의 서사가 아닌, 많은 사람들이 한 번쯤은 느껴봤을만한 일이라고 생각합니다.
         </p>
         
@@ -63,7 +59,7 @@ const essays = [
         </div>
         
         <p>
-          당신이 종교인이든, 비종교인이든 이 메시지는 우리에게 본질적인 진리를 전합니다.
+          당신이 종교인이든, 비종교인이든 이 메시지는 우리에게 본질적인 진리로 다가옵니다.
         </p>
         
         <p>
@@ -82,11 +78,20 @@ const essays = [
         </p>
         
         <p>
-          단지 그것에 집중하지 못 하게 하고, 소음을 만들어 가치를 만들어내는 자유인이 아닌, 권력에 순종하는 정신적 노예에 머무르게 하고자 하는 악의 세력이 있을 뿐입니다.
+          단지 우리가 그것에 집중하지 못하도록 소음을 만들어내고, 가치를 창조하는 자유인이 아닌 권력에 순종하는 정신적 노예로 머무르게 하려는 악의 세력이 있을 뿐입니다.
         </p>
         
         <p>
           혼자 하고자 하면 힘들고 외로운 길이 될 것입니다. 자신을 둘러싼 환경이 끊임없이 스스로를 의심하게 만들고 무엇이 진리인지 깨닫게 못 하게 하며, 외적인 압박에 놓여진 상황도 벌어질 수 있습니다.
+        </p>
+        
+        <p>
+          저는 제가 생각하는 아이디어와 이미지를 현실에 만들어 제 방식으로 표현하고, 그것이 가능하다는 것을 보여주고 싶습니다.<br />
+          그리고 저의 가장 가까운 이들이 스스로 믿고 나아갈 수 있으면 좋겠다는 생각으로 시작하게 되었습니다.
+        </p>
+        
+        <p>
+          나아가, 브랜드 유저들 한 명 한 명이 제가 만든 제품으로 아주 조금이라도 믿을 수 있는 에너지가 전해지길 바랍니다.
         </p>
         
         <p>
@@ -100,19 +105,20 @@ const essays = [
         </p>
         
         <p>
-          그것이 우리가 지향하는 정체성입니다.
+          그것이 우리가 지향하는 세상입니다.
         </p>
         
-        <p>
-          VISION FOR VISIONARY는 진리를 믿고 개척해 나가는 비전가들의 문화를 입고, 또 만들어 가겠습니다.
-        </p>
-        
-        <p className="font-bold tracking-widest mt-8 text-zinc-900">
-          VISION IN MOTION, PERFORMANCE IN ACTION.
-        </p>
+        <div className="mt-8">
+          <p className="font-bold tracking-widest text-zinc-900 uppercase">
+            VISION [FOR] VISIONARY
+          </p>
+          <p className="font-bold tracking-widest mt-1 text-zinc-900">
+            VISION IN MOTION, PERFORMANCE IN ACTION.
+          </p>
+        </div>
         
         <div className="mt-16 text-xs text-zinc-400 tracking-widest text-right flex flex-col gap-1 uppercase">
-          <p>— 대표 Seung Ahn.</p>
+          <p>— 代表 Seung Ahn.</p>
           <p className="capitalize">Aug 11, 2026. 한 카페에서.</p>
         </div>
       </>
@@ -134,7 +140,6 @@ export default function EssayPage() {
             key={essay.id} 
             className="w-full px-6 py-24 md:py-32 border-b border-zinc-200 flex flex-col items-center last:border-0"
           >
-            {/* 에세이 헤더 */}
             <div className="max-w-xl w-full text-center mb-16">
               <h1 className="text-[10px] md:text-xs tracking-[0.2em] text-zinc-500 mb-4 uppercase font-medium">
                 visionary's essay
@@ -147,7 +152,6 @@ export default function EssayPage() {
               </p>
             </div>
 
-            {/* 에세이 본문 */}
             <article className="max-w-xl w-full text-zinc-800 text-sm md:text-[15px] leading-[1.75] tracking-tight space-y-6 flex flex-col break-keep">
               {essay.content}
             </article>
