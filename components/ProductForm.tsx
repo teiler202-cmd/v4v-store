@@ -2,16 +2,11 @@
 
 import { useState } from 'react';
 import { useCart } from './CartProvider';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProductForm({ product }: { product: any }) {
-  
-  console.log("쇼피파이가 준 상품 데이터:", JSON.stringify(product.variants, null, 2));
-
-  const { addToCart } = useCart();
+  // 🔥 setIsCartOpen 리모콘을 가져옵니다. (토스트 관련 코드는 삭제)
+  const { addToCart, setIsCartOpen } = useCart();
   const [selectedSize, setSelectedSize] = useState<string>('');
-  
-  const [showToast, setShowToast] = useState(false); 
 
   const sizeOption = product.options?.find((opt: any) => opt.name === 'Size' || opt.name === 'Title');
   const sizes = sizeOption ? sizeOption.values : ['ONE SIZE'];
@@ -37,65 +32,41 @@ export default function ProductForm({ product }: { product: any }) {
     };
     
     addToCart(cartItem);
-
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-    }, 2500);
+    
+    // 🔥 담은 직후 장바구니 팝업을 멋지게 열어줍니다!
+    setIsCartOpen(true);
   };
 
   return (
-    <>
-      <div className="flex flex-col gap-8 w-full">
-        <div className="flex flex-col gap-4">
-          <span className="text-[10px] uppercase tracking-widest text-zinc-500">
-            {sizeOption ? sizeOption.name : 'SIZE'}
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {sizes.map((val: string) => (
-              <button 
-                key={val}
-                onClick={() => setSelectedSize(val)}
-                // 🔥 화이트 테마에 맞게 사이즈 선택 버튼의 색상과 테두리 수정
-                className={`border px-6 py-4 text-xs uppercase font-medium transition-all duration-300
-                  ${selectedSize === val 
-                    ? 'border-zinc-900 bg-zinc-900 text-white' 
-                    : 'border-zinc-300 bg-white text-black hover:border-zinc-900' 
-                  }
-                `}
-              >
-                {val}
-              </button>
-            ))}
-          </div>
+    <div className="flex flex-col gap-8 w-full">
+      <div className="flex flex-col gap-4">
+        <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold">
+          {sizeOption ? sizeOption.name : 'SIZE'}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {sizes.map((val: string) => (
+            <button 
+              key={val}
+              onClick={() => setSelectedSize(val)}
+              className={`border px-6 py-4 text-xs uppercase font-medium transition-all duration-300
+                ${selectedSize === val 
+                  ? 'border-zinc-900 bg-zinc-900 text-white' 
+                  : 'border-zinc-300 bg-white text-black hover:border-zinc-900' 
+                }
+              `}
+            >
+              {val}
+            </button>
+          ))}
         </div>
-
-        {/* 🔥 하단 장바구니 버튼에 디자이너 블랙(zinc-900)과 호버 액션 적용 */}
-        <button 
-          onClick={handleAddToCart}
-          className="w-full flex-shrink-0 bg-zinc-900 text-white py-6 text-sm uppercase tracking-[0.3em] font-bold mt-4 hover:bg-zinc-800 transition-colors duration-300"
-        >
-          {selectedSize ? 'Add to Cart' : 'Select Size'}
-        </button>
       </div>
 
-      {/* 토스트 팝업 UI */}
-      <AnimatePresence>
-        {showToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            // 🔥 토스트 팝업도 버튼과 통일감을 주기 위해 블랙으로 맞췄습니다.
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 text-white px-8 py-4 flex items-center justify-center shadow-2xl"
-          >
-            <span className="text-xs font-bold tracking-[0.2em] uppercase whitespace-nowrap">
-              Added to Bag
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+      <button 
+        onClick={handleAddToCart}
+        className="w-full flex-shrink-0 bg-zinc-900 text-white py-6 text-sm uppercase tracking-[0.3em] font-bold mt-4 hover:bg-zinc-800 transition-colors duration-300"
+      >
+        {selectedSize ? 'Add to Bag' : 'Select Size'}
+      </button>
+    </div>
   );
 }

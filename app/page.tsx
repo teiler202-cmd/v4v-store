@@ -26,7 +26,6 @@ export default function Home() {
   const quoteText = "VISION IN MOTION, PERFORMANCE IN ACTION";
   const [verse, setVerse] = useState('');
   const { cart } = useCart();
-  const totalItems = cart.reduce((t, i) => t + i.quantity, 0);
 
   useEffect(() => {
     if (isIntroSeen) {
@@ -55,11 +54,9 @@ export default function Home() {
 
   useEffect(() => {
     const footer = document.querySelector('footer');
-    
     if (footer) {
       footer.style.display = step === 'home' ? 'block' : 'none';
     }
-
     return () => {
       if (footer) footer.style.display = 'block';
     };
@@ -103,7 +100,6 @@ export default function Home() {
     <div className="w-full bg-white text-black select-none font-sans min-h-screen">
       <AnimatePresence mode="wait">
         
-        {/* 오프닝 1: 로고 오프닝 */}
         {step === 'logo' && (
           <motion.div
             key="logo-step"
@@ -130,24 +126,20 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* 오프닝 2: 철학 문구 */}
         {step === 'quote' && (
           <motion.div
             key="quote-step"
-            // 🔥 [수정 1]: px-10을 px-2로 줄여 모바일 좌우 공간을 최대한 확보했습니다.
             className="fixed inset-0 z-50 flex items-center justify-center bg-white px-2 md:px-10"
             exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.8 }}
           >
             <motion.div
               variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
-              // 🔥 [수정 2]: flex-wrap을 없애고 whitespace-nowrap을 추가하여 무조건 가로 한 줄로 나오게 강제했습니다.
               initial="hidden" animate="visible" className="flex justify-center max-w-5xl whitespace-nowrap overflow-hidden"
             >
               {quoteText.split("").map((char, index) => (
                 <motion.span
                   key={index} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
                   transition={{ duration: 0.3, ease: "linear" }}
-                  // 🔥 [수정 3]: 모바일 사이즈를 세밀하게 쪼개어 가장 작은 아이폰 SE부터 맥스까지 가로 한 줄에 쏙 들어가도록 맞췄습니다.
                   className="text-[10px] min-[390px]:text-[12px] sm:text-[14px] md:text-[45px] font-medium tracking-[-0.1em] uppercase inline-block"
                   style={{ minWidth: char === " " ? "0.3em" : "auto" }}
                 >
@@ -158,7 +150,6 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* 메인 3: 홈 화면 */}
         {step === 'home' && (
           <motion.div
             key="home-step" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}
@@ -172,38 +163,52 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="mt-2 md:mt-8 w-full max-w-[1000px] px-2 md:px-10 grid grid-cols-3 gap-x-2 md:gap-x-8 gap-y-8 md:gap-y-16 pb-20">
+            <div className="mt-2 md:mt-8 w-full max-w-[1200px] px-2 md:px-10 grid grid-cols-3 gap-x-2 md:gap-x-4 gap-y-12 md:gap-y-20 pb-32">
               {isLoading ? (
                 <div className="col-span-full h-64 flex items-center justify-center text-[10px] tracking-[0.5em] text-zinc-600 uppercase">
                   Loading performance gear...
                 </div>
               ) : products.length > 0 ? (
-                products.map((product: any) => (
-                  <Link href={`/products/${product.handle}`} key={product.id}>
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
-                      className="flex flex-col gap-1 md:gap-4 group cursor-pointer"
-                    >
-                      <div className="aspect-[3/4] bg-zinc-900 overflow-hidden border border-white/5 relative">
-                        {product.images?.edges[0] && (
-                          <img 
-                            src={product.images.edges[0].node.url} alt={product.title}
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-                          />
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center pt-1 md:pt-2 gap-1 md:gap-0">
-                        <h3 className="text-[8px] md:text-[12px] font-medium tracking-tighter md:tracking-tight uppercase leading-tight max-w-full md:max-w-[70%]">{product.title}</h3>
-                        <p className="text-[8px] md:text-[12px] font-light text-zinc-400 whitespace-nowrap">
-                          {product.priceRange.minVariantPrice.currencyCode} {Math.floor(product.priceRange.minVariantPrice.amount).toLocaleString()}
-                        </p>
-                      </div>
+                products.map((product: any) => {
+                  const firstImage = product.images?.edges[0]?.node?.url;
+                  const secondImage = product.images?.edges[1]?.node?.url;
 
-                    </motion.div>
-                  </Link>
-                ))
+                  return (
+                    <Link href={`/products/${product.handle}`} key={product.id}>
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
+                        className="flex flex-col group cursor-pointer"
+                      >
+                        {/* 🔥 1. 호버 이미지 스왑 영역: 반응 속도 극대화 */}
+                        <div className="aspect-[3/4] bg-[#f5f5f5] overflow-hidden relative border border-black/5">
+                          {firstImage && (
+                            <img 
+                              src={firstImage} alt={product.title}
+                              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ease-out ${secondImage ? 'group-hover:opacity-0' : ''}`}
+                            />
+                          )}
+                          {secondImage && (
+                            <img 
+                              src={secondImage} alt={`${product.title} view 2`}
+                              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ease-out opacity-0 group-hover:opacity-100"
+                            />
+                          )}
+                        </div>
+                        
+                        {/* 🔥 2. 미니멀 텍스트 영역 (중앙 정렬, 자간 확대) */}
+                        <div className="flex flex-col items-center justify-center pt-4 md:pt-5 gap-1.5">
+                          <h3 className={`${ibm.className} text-[9px] md:text-[11px] font-semibold tracking-[0.15em] uppercase text-zinc-900 text-center`}>
+                            {product.title}
+                          </h3>
+                          <p className={`${ibm.className} text-[9px] md:text-[11px] font-medium text-zinc-500 tracking-widest text-center`}>
+                            {product.priceRange.minVariantPrice.currencyCode} {Math.floor(product.priceRange.minVariantPrice.amount).toLocaleString()}
+                          </p>
+                        </div>
+
+                      </motion.div>
+                    </Link>
+                  );
+                })
               ) : (
                 <div className="col-span-full h-64 flex items-center justify-center text-[10px] tracking-[0.5em] text-zinc-600 uppercase">
                   No products found.
