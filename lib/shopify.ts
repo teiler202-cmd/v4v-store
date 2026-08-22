@@ -43,7 +43,8 @@ export async function getProducts() {
         'X-Shopify-Storefront-Access-Token': token as string,
       },
       body: JSON.stringify({ query }),
-      cache: 'no-store', 
+      // 60초 간격으로만 쇼피파이를 다시 물어봅니다 — 첫 화면이 즉시 뜨고, 재고/가격은 1분 내로 반영됩니다.
+      next: { revalidate: 60 },
     });
 
     const body = await response.json();
@@ -115,7 +116,7 @@ export async function getProduct(handle: string) {
         'X-Shopify-Storefront-Access-Token': token as string,
       },
       body: JSON.stringify({ query, variables }),
-      cache: 'no-store',
+      next: { revalidate: 60 },
     });
 
     const body = await response.json();

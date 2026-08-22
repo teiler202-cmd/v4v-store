@@ -45,7 +45,7 @@ export default function CheckoutPage() {
         {/* 🔥 기존 텍스트 로고(h1)를 새 그래픽 이미지로 교체 완료 */}
         <div className="flex justify-center flex-1">
           <Image 
-            src="/V4V_SlubTee_로고_정방향.png"  
+            src="/V4V_SlubTee_로고(가로쭉).png"  
             alt="V4V Logo"
             width={120}                
             height={24}               

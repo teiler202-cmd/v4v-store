@@ -142,8 +142,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-0 bg-black/40 z-[100] backdrop-blur-sm cursor-pointer"
+              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed inset-0 z-[100] cursor-pointer bg-black/35 backdrop-blur-[3px]"
               onClick={() => setIsCartOpen(false)}
             />
 
@@ -151,7 +151,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'tween', duration: 0.4, ease: 'easeInOut' }}
+              transition={{ type: 'tween', duration: 0.68, ease: [0.16, 1, 0.3, 1] }}
               className="fixed top-0 right-0 w-full max-w-[400px] h-full bg-white z-[101] shadow-2xl flex flex-col font-sans text-zinc-900"
             >
               <div className="flex justify-between items-center p-6 border-b border-zinc-200 shrink-0">

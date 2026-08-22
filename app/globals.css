@@ -1,12 +1,214 @@
 @import "tailwindcss";
 
+/* =========================================================
+   V4V — DESIGN TOKENS
+   ========================================================= */
+@theme {
+  /* Typography */
+  --font-sans: var(--v4v-font-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: var(--v4v-font-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-grotesk: var(--v4v-font-grotesk), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif-ko: var(--v4v-font-serif-ko), "Apple SD Gothic Neo", serif;
+  --font-serif-jp: var(--v4v-font-serif-jp), "Hiragino Mincho ProN", serif;
+
+  /* Palette — 종이처럼 따뜻한 화이트, 잉크처럼 깊은 블랙 */
+  --color-paper: #ffffff;
+  --color-ink: #0b0b0b;
+  --color-ash: #6b6b6b;
+  --color-mist: #f4f4f2;
+  --color-line: rgba(11, 11, 11, 0.12);
+  --color-line-soft: rgba(11, 11, 11, 0.07);
+
+  /* Motion — 고급스러운 감속 곡선 */
+  --ease-silk: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-glide: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Durations */
+  --v4v-fast: 320ms;
+  --v4v-base: 640ms;
+  --v4v-slow: 1100ms;
+}
+
+/* =========================================================
+   BASE
+   ========================================================= */
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
+  color-scheme: light;
+}
+
+html {
+  background-color: var(--color-paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-padding-top: 7rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
   margin: 0;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-feature-settings: "kern" 1, "liga" 1;
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* 얇고 조용한 스크롤바 */
+@media (pointer: fine) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(11, 11, 11, 0.18) transparent;
+  }
+}
+
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 텍스트가 마스크 안에서 위로 밀려 올라오는 연출용 */
+@utility text-mask {
+  overflow: hidden;
+  display: block;
+  clip-path: inset(-10% -10% -10% -10%);
+}
+
+/* 얇은 헤어라인 — 브랜드 전반의 구분선 */
+@utility hairline {
+  border-color: var(--color-line-soft);
+}
+
+/* =========================================================
+   INTRO GATE
+   최초 접속에만 인트로가 재생됩니다. (같은 탭에서 새로고침 시엔 생략)
+   부트스트랩 스크립트가 <html data-intro="playing | done">를 세팅합니다.
+   ========================================================= */
+html[data-intro="done"] .v4v-intro {
+  display: none !important;
+}
+
+html[data-intro="playing"] body {
+  overflow: hidden;
+}
+
+html[data-intro="playing"] .v4v-chrome {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.v4v-chrome {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 900ms var(--ease-silk);
+}
+
+/* =========================================================
+   VIEW TRANSITIONS — 페이지 이동을 스윽 이어붙입니다.
+   ========================================================= */
+::view-transition-old(.v4v-page) {
+  animation: v4v-page-out 340ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(.v4v-page) {
+  animation: v4v-page-in 760ms var(--ease-silk) 180ms both;
+}
+
+@keyframes v4v-page-out {
+  from {
+    opacity: 1;
+    filter: blur(0px);
+  }
+  to {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes v4v-page-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0);
+  }
+}
+
+/* 헤더는 이동 중에도 미동 없이 고정 — 시선의 기준점을 잃지 않도록 */
+::view-transition-group(v4v-header) {
+  animation: none;
+  z-index: 120;
+}
+::view-transition-old(v4v-header) {
+  display: none;
+}
+::view-transition-new(v4v-header) {
+  animation: none;
+}
+
+/* 썸네일 → 상세 히어로 이미지로 이어지는 공유 요소 모프 */
+::view-transition-group(.v4v-morph) {
+  animation-duration: 760ms;
+  animation-timing-function: var(--ease-silk);
+}
+::view-transition-image-pair(.v4v-morph) {
+  animation-name: v4v-morph-soften;
+  animation-duration: 760ms;
+}
+@keyframes v4v-morph-soften {
+  30% {
+    filter: blur(2.5px);
+  }
+}
+
+/* 푸터도 제자리를 지킵니다 */
+::view-transition-group(v4v-footer) {
+  animation: none;
+}
+::view-transition-old(v4v-footer) {
+  display: none;
+}
+::view-transition-new(v4v-footer) {
+  animation: none;
+}
+
+/* 남는 배경 레이어. 브라우저가 본문을 root로 잡는 경우에도 같은 호흡을 유지합니다. */
+::view-transition-old(root) {
+  animation: v4v-page-out 340ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(root) {
+  animation: v4v-page-in 760ms var(--ease-silk) 180ms both;
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
 }

@@ -1,42 +1,47 @@
 import Link from 'next/link';
 
+const POLICIES = [
+  { href: '/policies/terms-of-service', label: 'Terms of Service' },
+  { href: '/policies/privacy-policy', label: 'Privacy Policy' },
+  { href: '/policies/refund-policy', label: 'Refund Policy' },
+  { href: '/policies/shipping-policy', label: 'Shipping Policy' },
+  { href: '/policies/contact', label: 'Contact' },
+];
+
 export default function Footer() {
   return (
-    // 🔥 mt-20을 삭제하고 pt-32로 안쪽 여백을 넉넉히 주어 하얀 배경이 채워지게 합니다.
-    // 🔥 border-white/10 (다크모드용 선)을 border-zinc-200 (화이트모드용 선)으로 변경
-    <footer className="w-full bg-white text-zinc-500 border-t border-zinc-200 pt-32 pb-12 px-6 md:px-10 text-xs font-light tracking-wide">
-      <div className="max-w-[1400px] mx-auto flex flex-col gap-10">
-        
-        {/* 1. 정책 링크들 */}
-        <div className="flex flex-wrap gap-6 uppercase tracking-widest text-[10px]">
-          <Link href="/policies/terms-of-service" className="hover:text-black transition-colors">Terms of Service</Link>
-          <Link href="/policies/privacy-policy" className="hover:text-black transition-colors">Privacy Policy</Link>
-          <Link href="/policies/refund-policy" className="hover:text-black transition-colors">Refund Policy</Link>
-          <Link href="/policies/shipping-policy" className="hover:text-black transition-colors">Shipping Policy</Link>
-          <Link href="/policies/contact" className="hover:text-black transition-colors">Contact</Link>
-        </div>
+    <footer style={{ viewTransitionName: 'v4v-footer' }} className="v4v-chrome w-full border-t border-line-soft bg-paper px-6 pb-14 pt-28 text-ink md:px-10 md:pt-36">
+      <div className="mx-auto flex max-w-[1500px] flex-col gap-14">
+        {/* 1. 정책 링크 */}
+        <nav className="flex flex-wrap gap-x-8 gap-y-3">
+          {POLICIES.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="font-mono text-[8.5px] uppercase tracking-[0.22em] text-ash transition-colors duration-500 ease-silk hover:text-ink md:text-[9px]"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
 
         {/* 2. 법적 필수 표기 사항 */}
-        <div className="flex flex-col gap-2 text-zinc-500 leading-relaxed">
-          <p>
-            {/* 🔥 화이트 배경에 맞게 폰트 컬러를 조금 더 진하게(zinc-800) 수정 */}
-            <strong className="font-medium text-zinc-800">비전포비저너리(V4V)</strong>
+        <div className="grid grid-cols-1 gap-x-10 gap-y-2 text-[10px] font-light leading-[1.9] tracking-[0.01em] text-ash md:grid-cols-2 md:text-[10.5px]">
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink md:col-span-2">
+            비전포비저너리 (V4V)
           </p>
-          <p>
-            대표: [안세웅] | 사업자등록번호: [501-07-57403] | 통신판매업신고: [발급 대기 중...]
-          </p>
-          <p>
-            주소: [경기도 용인시 기흥구 금화로 11번길 10, 303동 8층] | 고객센터: [010-5634-8804]
-          </p>
-          <p>
-            개인정보보호책임자: [안세웅] | 호스팅 제공자: Shopify Inc.
-          </p>
+          <p>대표: 안세웅 &nbsp;|&nbsp; 사업자등록번호: 501-07-57403</p>
+          <p>통신판매업신고: 발급 대기 중</p>
+          <p>주소: 경기도 용인시 기흥구 금화로 11번길 10, 303동 8층</p>
+          <p>고객센터: 010-5634-8804</p>
+          <p>개인정보보호책임자: 안세웅</p>
+          <p>호스팅 제공자: Shopify Inc.</p>
         </div>
 
-        {/* 3. 저작권 표기 */}
-        {/* 🔥 여기의 구분선도 border-white/5 에서 border-zinc-200으로 변경하여 잘 보이게 처리 */}
-        <div className="pt-8 border-t border-zinc-200 text-zinc-400 flex justify-between items-center">
-          <span>© {new Date().getFullYear()} VISION FOR VISIONARY. All rights reserved.</span>
+        {/* 3. 저작권 */}
+        <div className="flex flex-col gap-3 border-t border-line-soft pt-8 font-mono text-[8.5px] uppercase tracking-[0.2em] text-ash md:flex-row md:items-center md:justify-between md:text-[9px]">
+          <span>© {new Date().getFullYear()} Vision for Visionary</span>
+          <span className="opacity-60">Vision in Motion, Performance in Action</span>
         </div>
       </div>
     </footer>

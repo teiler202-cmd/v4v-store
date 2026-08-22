@@ -1,11 +1,5 @@
 import React from 'react';
-import Header from '@/components/Header';
-import { IBM_Plex_Mono } from 'next/font/google';
-
-const ibm = IBM_Plex_Mono({ 
-  subsets: ['latin'], 
-  weight: ['400', '500', '600', '700'] 
-});
+import { nanum } from '@/lib/fonts';
 
 const essays = [
   {
@@ -129,35 +123,33 @@ const essays = [
 export default function EssayPage() {
   return (
     <>
-      <Header />
       
-      <main 
-        className={`min-h-screen bg-white text-zinc-900 flex flex-col items-center ${ibm.className}`}
-      >
-        
+      <main className="flex min-h-screen flex-col items-center bg-paper text-ink">
         {essays.map((essay) => (
-          <section 
-            key={essay.id} 
-            className="w-full px-6 py-24 md:py-32 border-b border-zinc-200 flex flex-col items-center last:border-0"
+          <section
+            key={essay.id}
+            className="flex w-full flex-col items-center border-b border-line-soft px-6 py-20 last:border-0 md:py-28"
           >
-            <div className="max-w-xl w-full text-center mb-16">
-              <h1 className="text-[10px] md:text-xs tracking-[0.2em] text-zinc-500 mb-4 uppercase font-medium">
-                visionary's essay
+            <div className="mb-14 w-full max-w-xl text-center md:mb-20">
+              <h1 className="mb-5 font-mono text-[8px] uppercase tracking-[0.32em] text-ash md:text-[9px]">
+                Visionary&rsquo;s Essay
               </h1>
-              <h2 className="text-xl md:text-2xl font-semibold tracking-[0.1em] leading-[1.3] whitespace-pre-line text-zinc-900 uppercase">
+              <h2 className="whitespace-pre-line font-grotesk text-[18px] font-bold uppercase leading-[1.25] tracking-[-0.02em] text-ink md:text-[24px]">
                 {essay.title}
               </h2>
-              <p className="text-[10px] md:text-xs tracking-widest text-zinc-400 mt-6 uppercase">
+              <p className="mt-6 font-mono text-[8px] uppercase tracking-[0.26em] text-ash md:text-[9px]">
                 {essay.date}
               </p>
+              <span className="mx-auto mt-10 block h-px w-10 bg-ink/25" />
             </div>
 
-            <article className="max-w-xl w-full text-zinc-800 text-sm md:text-[15px] leading-[1.75] tracking-tight space-y-6 flex flex-col break-keep">
+            <article
+              className={`${nanum.className} flex w-full max-w-lg flex-col space-y-5 break-keep text-[13px] leading-[2.05] tracking-[-0.01em] text-ink/80 md:text-[14px]`}
+            >
               {essay.content}
             </article>
           </section>
         ))}
-        
       </main>
     </>
   );
