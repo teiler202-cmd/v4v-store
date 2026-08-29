@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useSpring, type Variants } from 'framer-motion';
 
 export const SILK = [0.16, 1, 0.3, 1] as const;
@@ -173,5 +174,88 @@ export function ScrollProgress() {
       style={{ scaleX: width }}
       className="pointer-events-none fixed left-0 top-0 z-[60] h-px w-full origin-left bg-ink/25"
     />
+  );
+}
+
+type WordRevealProps = {
+  text: string;
+  className?: string;
+  /** 단어 사이 간격(초) */
+  stagger?: number;
+  duration?: number;
+  standalone?: boolean;
+  amount?: number;
+};
+
+/**
+ * 문장이 한 단어씩 생각처럼 떠오르는 연출.
+ * 마스크 뒤에서 밀려 올라오며 흐림이 걷힙니다.
+ */
+export function WordReveal({
+  text,
+  className,
+  stagger = 0.045,
+  duration = 1.1,
+  standalone = true,
+  amount = 0.4,
+}: WordRevealProps) {
+  const reduced = useReducedMotion();
+  const words = text.split(' ');
+
+  if (reduced) return <span className={className}>{text}</span>;
+
+  return (
+    <motion.span
+      className={`inline ${className ?? ''}`}
+      initial="hidden"
+      {...(standalone
+        ? { whileInView: 'visible', viewport: { once: true, amount } }
+        : {})}
+      variants={{ visible: { transition: { staggerChildren: stagger } } }}
+    >
+      {words.map((word, index) => (
+        <span
+          key={`${word}-${index}`}
+          className="inline-block overflow-hidden align-bottom"
+          style={{ paddingBottom: '0.08em' }}
+        >
+          <motion.span
+            className="inline-block will-change-transform"
+            variants={{
+              hidden: { y: '104%', opacity: 0, filter: 'blur(5px)' },
+              visible: { y: '0%', opacity: 1, filter: 'blur(0px)' },
+            }}
+            transition={{ duration, ease: SILK }}
+          >
+            {word}
+            {index < words.length - 1 ? '\u00A0' : ''}
+          </motion.span>
+        </span>
+      ))}
+    </motion.span>
+  );
+}
+
+/** 스크롤을 따라 아래로 그어지는 사유의 실선 */
+export function ThreadLine({ className = '' }: { className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start 85%', 'end 40%'],
+  });
+  const scaleY = useSpring(scrollYProgress, { stiffness: 90, damping: 28, mass: 0.5 });
+
+  return (
+    <span
+      ref={ref}
+      aria-hidden
+      className={`pointer-events-none absolute bottom-0 top-0 w-px overflow-hidden ${className}`}
+    >
+      <motion.span
+        style={reduced ? { scaleY: 1 } : { scaleY }}
+        className="block h-full w-full origin-top bg-ink/15"
+      />
+    </span>
   );
 }

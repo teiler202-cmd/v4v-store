@@ -1,9 +1,14 @@
-import React from 'react';
+'use client';
+
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { nanum } from '@/lib/fonts';
 
 const essays = [
   {
     id: 1,
+    /** 좌측 인덱스에 찍히는 번호 — 글을 쓴 순서대로 매깁니다 */
+    number: '001',
+    slug: 'manifesto',
     date: "August 11, 2026",
     title: "MANIFESTO",
     content: (
@@ -117,22 +122,154 @@ const essays = [
         </div>
       </>
     )
+  },
+  {
+    // 🔎 인덱스 동작 확인용으로 임시로 넣어둔 글입니다. 실제 글로 교체하세요.
+    id: 2,
+    number: '002',
+    slug: 'midbar',
+    date: "August 21, 2026",
+    title: "MIDBAR",
+    content: (
+      <>
+        <p className="pb-2 text-[14px] font-semibold text-ink md:text-[15px]">
+          “광야는 아무것도 없는 땅이 아니라, 아무것도 나를 대신해 말해주지 않는 땅입니다.”
+        </p>
+
+        <p>
+          도시에서는 매일 수천 개의 문장이 저를 스쳐 지나갑니다. 무엇을 사야 하는지, 어떻게 보여야 하는지, 무엇이 현실적인지. 그 문장들은 너무 익숙해서 어느 순간부터는 제 생각처럼 들립니다.
+        </p>
+
+        <p>
+          광야(Midbar)로 떠난다는 건 그 문장들이 닿지 않는 거리까지 걸어간다는 뜻입니다. 소리가 사라지고 나면 처음에는 불안이 옵니다. 나를 설명해주던 것들이 전부 사라지기 때문입니다. 그 불안을 지나야 비로소 내 목소리가 들립니다.
+        </p>
+
+        <p>
+          사막의 모래 언덕은 매일 모양을 바꾸지만, 바람의 방향을 거스르지는 않습니다. 거대한 혼돈 속에서도 질서를 지키는 방식입니다. 저는 그것이 창조의 태도라고 생각합니다. 유행을 따르지 않되, 세계가 움직이는 원리는 존중하는 것.
+        </p>
+
+        <p>
+          우리가 만드는 옷도 같은 자리에서 출발합니다. 거친 기후를 견디기 위해 만들어진 옷은 장식이 없습니다. 필요한 것만 남기고, 남긴 것은 오래 씁니다. 미니멀은 스타일이 아니라 생존의 결론입니다.
+        </p>
+
+        <p className="pt-2 font-medium text-ink">
+          당신의 광야는 어디입니까.
+        </p>
+
+        <div className="mt-16 flex flex-col gap-1 text-right font-mono text-[9px] uppercase tracking-[0.24em] text-ash">
+          <p>— 代表 Seung Ahn.</p>
+          <p>Aug 21, 2026.</p>
+        </div>
+      </>
+    )
   }
 ];
 
 export default function EssayPage() {
+  // 최신 글이 위로, 오래된 글이 아래로 놓입니다.
+  const ordered = [...essays].sort((a, b) => Number(b.number) - Number(a.number));
+  const [active, setActive] = useState(ordered[0]?.slug ?? '');
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  // 지금 화면에 들어와 있는 글을 인덱스에 표시합니다.
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target instanceof HTMLElement && visible.target.dataset.slug) {
+          setActive(visible.target.dataset.slug);
+        }
+      },
+      { rootMargin: '-30% 0px -55% 0px', threshold: [0, 0.25, 0.5, 1] }
+    );
+
+    Object.values(sectionRefs.current).forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  const jumpTo = useCallback((slug: string) => {
+    const el = sectionRefs.current[slug];
+    if (!el) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // 헤더(+모바일 인덱스 바)에 가리지 않도록 그만큼 위를 비워둡니다.
+    const offset = window.innerWidth < 1024 ? 122 : 96;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    // 페이지를 떠나지 않고, 해당 글 자리로 미끄러져 갑니다.
+    window.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' });
+  }, []);
+
   return (
     <>
-      
+      {/* ---------- 인덱스 (데스크톱: 좌측 고정) ---------- */}
+      <nav
+        aria-label="Essay index"
+        className="pointer-events-none fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 lg:block xl:left-10"
+      >
+        <ul className="pointer-events-auto flex flex-col gap-3">
+          {ordered.map((essay) => {
+            const on = active === essay.slug;
+            return (
+              <li key={essay.slug}>
+                <button
+                  onClick={() => jumpTo(essay.slug)}
+                  className={`group flex items-baseline gap-3 text-left font-mono text-[9px] uppercase tracking-[0.2em] transition-colors duration-500 ease-silk ${
+                    on ? 'text-ink' : 'text-ash hover:text-ink'
+                  }`}
+                >
+                  <span className="tabular-nums">{essay.number}</span>
+                  <span className="relative">
+                    {essay.title}
+                    <span
+                      className={`absolute -bottom-0.5 left-0 h-px w-full origin-left bg-ink transition-transform duration-[600ms] ease-silk ${
+                        on ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                      }`}
+                    />
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* ---------- 인덱스 (모바일·태블릿: 상단 가로 바) ---------- */}
+      <nav
+        aria-label="Essay index"
+        className="scrollbar-hide sticky top-[62px] z-30 flex gap-5 overflow-x-auto border-b border-line-soft bg-paper/90 px-5 py-2.5 backdrop-blur-xl lg:hidden"
+      >
+        {ordered.map((essay) => {
+          const on = active === essay.slug;
+          return (
+            <button
+              key={essay.slug}
+              onClick={() => jumpTo(essay.slug)}
+              className={`shrink-0 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors duration-500 ${
+                on ? 'text-ink' : 'text-ash'
+              }`}
+            >
+              <span className="tabular-nums">{essay.number}</span>
+              <span className="ml-2">{essay.title}</span>
+            </button>
+          );
+        })}
+      </nav>
+
       <main className="flex min-h-screen flex-col items-center bg-paper text-ink">
-        {essays.map((essay) => (
+        {ordered.map((essay) => (
           <section
             key={essay.id}
-            className="flex w-full flex-col items-center border-b border-line-soft px-6 py-20 last:border-0 md:py-28"
+            id={essay.slug}
+            data-slug={essay.slug}
+            ref={(el) => {
+              sectionRefs.current[essay.slug] = el;
+            }}
+            className="flex w-full scroll-mt-32 flex-col items-center border-b border-line-soft px-6 py-20 last:border-0 md:py-28"
           >
             <div className="mb-14 w-full max-w-xl text-center md:mb-20">
               <h1 className="mb-5 font-mono text-[8px] uppercase tracking-[0.32em] text-ash md:text-[9px]">
-                Visionary&rsquo;s Essay
+                Visionary&rsquo;s Essay — {essay.number}
               </h1>
               <h2 className="whitespace-pre-line font-grotesk text-[18px] font-bold uppercase leading-[1.25] tracking-[-0.02em] text-ink md:text-[24px]">
                 {essay.title}

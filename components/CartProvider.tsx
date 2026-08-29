@@ -3,8 +3,8 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-// 🔥 추천 상품을 불러오기 위해 기존 쇼피파이 API 함수를 임포트합니다.
-import { getProducts } from '@/lib/shopify';
+import { getSizeOption, resolveVariantId } from '@/lib/variant';
+import { sizedImage, sizedSrcSet } from '@/lib/image';
 
 type CartItem = {
   id: string;
@@ -20,30 +20,43 @@ type CartContextType = {
   updateQuantity: (id: string, delta: number) => void;
   isCartOpen: boolean; 
   setIsCartOpen: (isOpen: boolean) => void; 
+  /**
+   * 브라우저에 저장된 장바구니를 아직 읽기 전인지 알려줍니다.
+   * false 동안에는 cart가 빈 배열인데, 이건 '비어 있다'가 아니라 '아직 모른다'는 뜻입니다.
+   * 둘을 구분하지 않으면 결제 화면이 '장바구니가 비었습니다'를 먼저 보여줍니다.
+   */
+  hydrated: boolean;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // 🛒 [추가]: 추천 상품 1개를 그려주는 미니 컴포넌트 (ERL 스타일 폼)
 function RecommendedItem({ product, addToCart }: { product: any, addToCart: (item: CartItem) => void }) {
-  const sizeOption = product.options?.find((opt: any) => opt.name === 'Size' || opt.name === 'Title');
-  const sizes = sizeOption ? sizeOption.values : ['ONE SIZE'];
+  const sizeOption = getSizeOption(product);
+  const isOneSize = !sizeOption;
+  const sizes = sizeOption?.values ?? ['ONE SIZE'];
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [warning, setWarning] = useState<string | null>(null);
 
   const handleAdd = () => {
-    if (!selectedSize && sizes[0] !== 'ONE SIZE') {
-      alert("사이즈를 선택해 주세요.");
+    if (!isOneSize && !selectedSize) {
+      setWarning('사이즈를 선택해 주세요');
       return;
     }
-    const selectedVariant = product.variants?.edges?.find((edge: any) => {
-      return edge.node.selectedOptions?.some((opt: any) => opt.value === selectedSize) || edge.node.title === selectedSize;
-    })?.node;
 
-    const variantId = selectedVariant ? selectedVariant.id : product.variants?.edges[0]?.node?.id;
+    const variantId = resolveVariantId(product, isOneSize ? undefined : selectedSize);
 
+    // Variant ID가 없으면 담지 않습니다 —
+    // 예전에는 여기서 undefined가 들어가 React key 경고와 결제 실패로 이어졌습니다.
+    if (!variantId) {
+      setWarning('지금은 담을 수 없는 상품입니다');
+      return;
+    }
+
+    setWarning(null);
     addToCart({
       id: variantId,
-      title: sizes[0] === 'ONE SIZE' ? product.title : `${product.title} (${selectedSize})`,
+      title: isOneSize ? product.title : `${product.title} (${selectedSize})`,
       price: product.priceRange.minVariantPrice.amount,
       image: product.images?.edges[0]?.node?.url || '',
       quantity: 1,
@@ -54,7 +67,16 @@ function RecommendedItem({ product, addToCart }: { product: any, addToCart: (ite
   return (
     <div className="flex gap-4 pt-6 border-t border-zinc-200/60">
       <div className="w-20 md:w-24 aspect-[3/4] bg-zinc-100 overflow-hidden shrink-0 border border-zinc-200">
-        <img src={product.images?.edges[0]?.node?.url} alt={product.title} className="w-full h-full object-cover" />
+        <img
+          src={sizedImage(product.images?.edges[0]?.node?.url, 192)}
+          srcSet={sizedSrcSet(product.images?.edges[0]?.node?.url, [96, 192, 288])}
+          sizes="(max-width: 768px) 80px, 96px"
+          width={96}
+          height={128}
+          loading="lazy"
+          alt={product.title}
+          className="w-full h-full object-cover"
+        />
       </div>
       <div className="flex-1 flex flex-col justify-between py-1">
         <div>
@@ -62,8 +84,11 @@ function RecommendedItem({ product, addToCart }: { product: any, addToCart: (ite
           <p className="text-[10px] text-zinc-500 tracking-widest font-medium">KRW {Math.floor(Number(product.priceRange.minVariantPrice.amount)).toLocaleString()}</p>
         </div>
         <div className="flex flex-col gap-2 mt-4">
+          {warning && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-zinc-900">{warning}</span>
+          )}
           {/* 원사이즈가 아닐 경우에만 드롭다운 표시 */}
-          {sizes[0] !== 'ONE SIZE' && (
+          {!isOneSize && (
             <select
               className="w-full text-[10px] border border-zinc-300 p-2 uppercase tracking-widest bg-white text-zinc-900 outline-none focus:border-zinc-900 transition-colors cursor-pointer"
               value={selectedSize}
@@ -86,20 +111,56 @@ function RecommendedItem({ product, addToCart }: { product: any, addToCart: (ite
 }
 
 
+const CART_STORAGE_KEY = 'v4v:cart';
+
+/** 새로고침·페이지 이동에도 장바구니가 남아 있도록 브라우저에 저장해 둡니다. */
+function readStoredCart(): CartItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    // 예전 버전에서 id 없이 저장된 항목이 있다면 걸러냅니다.
+    return Array.isArray(parsed) ? parsed.filter((item) => item && item.id) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false); 
   const [recommended, setRecommended] = useState<any[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  // 저장된 장바구니 복원.
+  // 서버 HTML과 첫 렌더를 일치시켜야 하므로(헤더의 BAG 개수) 마운트 후에 읽습니다.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCart(readStoredCart());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } catch {
+      /* 저장 공간이 없거나 프라이빗 모드 — 무시 */
+    }
+  }, [cart, hydrated]);
 
   // 🔥 팝업이 열릴 때 상품 목록을 백그라운드에서 조용히 불러옵니다.
   useEffect(() => {
     if (isCartOpen && recommended.length === 0) {
       const fetchRecs = async () => {
         try {
-          const data = await getProducts();
-          setRecommended(data);
-        } catch (error) {
-          console.error("추천 상품 로딩 실패:", error);
+          // 쇼피파이 접속 정보는 서버에만 있습니다 — 브라우저는 우리 서버에만 말을 겁니다.
+          const res = await fetch('/api/recommendations');
+          if (!res.ok) return;
+          const data = await res.json();
+          setRecommended(data.products ?? []);
+        } catch {
+          // 추천은 있으면 좋은 정보일 뿐이라, 실패해도 장바구니는 그대로 씁니다.
         }
       };
       fetchRecs();
@@ -107,6 +168,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [isCartOpen, recommended.length]);
 
   const addToCart = (newItem: CartItem) => {
+    if (!newItem?.id) {
+      console.error('[cart] variantId 없이 담으려 했습니다:', newItem);
+      return;
+    }
     setCart((prev) => {
       const existing = prev.find((item) => item.id === newItem.id);
       if (existing) {
@@ -132,7 +197,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const displayRecs = recommended.filter(p => !cartBaseTitles.includes(p.title)).slice(0, 3);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateQuantity, isCartOpen, setIsCartOpen }}>
+    <CartContext.Provider value={{ cart, addToCart, updateQuantity, isCartOpen, setIsCartOpen, hydrated }}>
       {children}
 
       <AnimatePresence>
@@ -167,10 +232,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
                   {cart.length === 0 ? (
                     <p className="text-[11px] text-zinc-500 uppercase tracking-widest text-center mt-4">Your bag is empty.</p>
                   ) : (
-                    cart.map(item => (
-                      <div key={item.id} className="flex gap-4">
+                    cart.map((item, index) => (
+                      <div key={item.id || `cart-${index}`} className="flex gap-4">
                         <div className="w-20 md:w-24 aspect-[3/4] bg-zinc-100 overflow-hidden shrink-0 border border-zinc-200">
-                          <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                          <img
+                            src={sizedImage(item.image, 192)}
+                            srcSet={sizedSrcSet(item.image, [96, 192, 288])}
+                            sizes="(max-width: 768px) 80px, 96px"
+                            width={96}
+                            height={128}
+                            loading="lazy"
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                         
                         <div className="flex-1 flex flex-col justify-between py-1">

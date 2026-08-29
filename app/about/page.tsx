@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { nanum, notoJp } from '@/lib/fonts';
-import { MaskUp, Reveal, RevealItem, ScrollProgress, SILK } from '@/components/Reveal';
+import { MaskUp, Reveal, RevealItem, ScrollProgress, ThreadLine, WordReveal, SILK } from '@/components/Reveal';
 
 type Block = { heading: string; body: string };
 type Lang = 'en' | 'ko' | 'jp';
@@ -113,7 +113,7 @@ const TYPE: Record<Lang, { wrap: string; heading: string; body: string; opacity:
   },
   ko: {
     wrap: `${nanum.className}`,
-    heading: 'text-[16px] md:text-[20px] font-extrabold tracking-[-0.03em] leading-[1.4] break-keep text-ink',
+    heading: 'text-[16px] md:text-[20px] font-bold tracking-[-0.03em] leading-[1.4] break-keep text-ink',
     body: 'font-bold text-[13px] md:text-[14.5px] tracking-[-0.015em] leading-[1.7] break-keep text-ash',
     opacity: 0.72,
   },
@@ -125,25 +125,40 @@ const TYPE: Record<Lang, { wrap: string; heading: string; body: string; opacity:
   },
 };
 
-function SectionTitle({ lines }: { lines: [string, string] }) {
+const NUMERALS = ['I', 'II', 'III', 'IV', 'V'];
+
+function SectionTitle({ lines, index }: { lines: [string, string]; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const y = useTransform(scrollYProgress, [0, 1], [26, -26]);
+  const y = useTransform(scrollYProgress, [0, 1], [22, -22]);
 
   return (
     <div ref={ref} className="md:col-span-5">
-      <motion.h2
-        style={reduced ? undefined : { y }}
-        className="font-grotesk text-[34px] font-bold uppercase leading-[0.9] tracking-[-0.045em] text-ink md:sticky md:top-36 md:text-[clamp(30px,3.7vw,54px)]"
-      >
-        <MaskUp standalone duration={1.3}>
-          {lines[0]}
-        </MaskUp>
-        <MaskUp standalone duration={1.3} delay={0.1}>
-          {lines[1]}
-        </MaskUp>
-      </motion.h2>
+      <div className="md:sticky md:top-36">
+        <RevealItem standalone y={10} blur={4} duration={1} className="mb-4 md:mb-5">
+          <span className="font-mono text-[9px] uppercase tracking-[0.34em] text-ash">
+            {NUMERALS[index] ?? index + 1}
+          </span>
+        </RevealItem>
+
+        <motion.h2
+          style={reduced ? undefined : { y }}
+          /* 자간이 넓게 열렸다가 제자리를 찾아 들어옵니다 */
+          initial={reduced ? undefined : { letterSpacing: '0.04em' }}
+          whileInView={reduced ? undefined : { letterSpacing: '-0.045em' }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 1.8, ease: SILK }}
+          className="font-grotesk text-[34px] font-bold uppercase leading-[0.9] text-ink md:text-[clamp(30px,3.7vw,54px)]"
+        >
+          <MaskUp standalone duration={1.4}>
+            {lines[0]}
+          </MaskUp>
+          <MaskUp standalone duration={1.4} delay={0.12}>
+            {lines[1]}
+          </MaskUp>
+        </motion.h2>
+      </div>
     </div>
   );
 }
@@ -154,7 +169,7 @@ export default function AboutPage() {
       <ScrollProgress />
 
       {/* ---------- 표제 ---------- */}
-      <header className="mb-16 mt-20 flex w-full flex-col items-center px-6 text-center md:mb-24 md:mt-28">
+      <header className="mb-14 mt-18 flex w-full flex-col items-center px-6 text-center md:mb-20 md:mt-24">
         <h1 className="font-grotesk text-[16px] font-bold uppercase tracking-[0.2em] text-ink md:text-[24px] md:tracking-[0.18em]">
           <MaskUp standalone duration={1.5}>
             ( Vision for Visionary )
@@ -169,38 +184,47 @@ export default function AboutPage() {
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: 2.2, delay: 0.6, ease: SILK }}
-          className="mt-10 block h-px w-[40vw] max-w-[300px] origin-center bg-ink/15 md:mt-12"
+          className="mt-9 block h-px w-[36vw] max-w-[260px] origin-center bg-ink/15 md:mt-11"
         />
       </header>
 
       {/* ---------- 본문 ---------- */}
-      <main className="flex w-full max-w-[1280px] flex-col gap-24 px-6 pb-32 md:gap-36 md:px-14">
+      <main className="flex w-full max-w-[1280px] flex-col gap-20 px-6 pb-28 md:gap-28 md:px-14">
         {SECTIONS.map((section, sectionIndex) => (
           <section
             key={section.title.join(' ')}
             className={`grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-10 lg:gap-14 ${
-              sectionIndex > 0 ? 'border-t border-line-soft pt-14 md:pt-24' : ''
+              sectionIndex > 0 ? 'border-t border-line-soft pt-12 md:pt-20' : ''
             }`}
           >
-            <SectionTitle lines={section.title} />
+            <SectionTitle lines={section.title} index={sectionIndex} />
 
-            <div className="flex flex-col gap-12 pt-2 md:col-span-7 md:gap-14 md:pt-0">
+            <div className="relative flex flex-col gap-9 pt-2 md:col-span-7 md:gap-11 md:pt-0">
+              {/* 사유의 실선 — 스크롤을 따라 아래로 그어집니다 */}
+              <ThreadLine className="-left-5 hidden md:block" />
+
               {section.groups.map((group, groupIndex) => {
                 const t = TYPE[group.lang];
                 return (
                   <Reveal
                     key={group.lang}
-                    className={`${t.wrap} flex flex-col gap-7`}
+                    className={`${t.wrap} flex flex-col gap-5`}
                     style={{ opacity: t.opacity }}
                     stagger={0.13}
                     delay={groupIndex * 0.06}
                     amount={0.14}
                   >
                     {group.blocks.map((block) => (
-                      <div key={block.heading} className="flex flex-col gap-2">
-                        <MaskUp innerClassName={t.heading} duration={1.3}>
-                          {block.heading}
-                        </MaskUp>
+                      <div key={block.heading} className="flex flex-col gap-1.5">
+                        {group.lang === 'en' ? (
+                          <h3 className={t.heading}>
+                            <WordReveal text={block.heading} stagger={0.038} duration={1.05} />
+                          </h3>
+                        ) : (
+                          <MaskUp innerClassName={t.heading} duration={1.3}>
+                            {block.heading}
+                          </MaskUp>
+                        )}
                         <RevealItem y={22} blur={6} duration={1.4}>
                           <p className={t.body}>{block.body}</p>
                         </RevealItem>

@@ -4,6 +4,7 @@ import { ViewTransition } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { SILK } from '@/components/Reveal';
+import { sizedImage, sizedSrcSet } from '@/lib/image';
 
 export default function ShopGrid({ products }: { products: any[] }) {
   if (!products || products.length === 0) {
@@ -35,7 +36,11 @@ export default function ShopGrid({ products }: { products: any[] }) {
                   {firstImage && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={firstImage}
+                      src={sizedImage(firstImage, 360)}
+                      srcSet={sizedSrcSet(firstImage, [240, 360, 480])}
+                      sizes={"(max-width: 768px) 50vw, 220px"}
+                      width={240}
+                      height={300}
                       alt={product.title}
                       className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-[550ms] ease-silk ${
                         secondImage ? 'group-hover:opacity-0' : ''
@@ -45,7 +50,12 @@ export default function ShopGrid({ products }: { products: any[] }) {
                   {secondImage && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={secondImage}
+                      src={sizedImage(secondImage, 360)}
+                      srcSet={sizedSrcSet(secondImage, [240, 360, 480])}
+                      sizes={"(max-width: 768px) 50vw, 220px"}
+                      width={240}
+                      height={300}
+                      loading="lazy"
                       alt={`${product.title} — alternate view`}
                       className="absolute inset-0 h-full w-full object-contain opacity-0 transition-opacity duration-[550ms] ease-silk group-hover:opacity-100"
                     />

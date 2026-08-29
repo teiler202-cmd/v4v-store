@@ -4,6 +4,9 @@ import { useRef, useState } from 'react';
 import { ViewTransition } from 'react';
 import Link from 'next/link';
 import ProductForm from '@/components/ProductForm';
+import ModelShot from '@/components/ModelShot';
+import { parseModelSpec } from '@/lib/modelSpec';
+import { sizedImage, sizedSrcSet } from '@/lib/image';
 
 function ZoomImage({ src, alt }: { src: string; alt: string }) {
   const [isZoomed, setIsZoomed] = useState(false);
@@ -25,7 +28,9 @@ function ZoomImage({ src, alt }: { src: string; alt: string }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={src}
+        src={sizedImage(src, 900)}
+        srcSet={sizedSrcSet(src, [640, 900, 1280])}
+        sizes="(max-width: 768px) 100vw, 620px"
         alt={alt}
         className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-300 ease-silk ${
           isZoomed ? 'opacity-100 md:opacity-0' : 'opacity-100'
@@ -36,7 +41,8 @@ function ZoomImage({ src, alt }: { src: string; alt: string }) {
           isZoomed ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
-          backgroundImage: `url(${src})`,
+          // 확대 레이어만 원본 해상도를 씁니다 — 여기서는 화질이 곧 기능입니다.
+          backgroundImage: `url(${sizedImage(src, 1600)})`,
           backgroundPosition: `${mousePos.x}% ${mousePos.y}%`,
           backgroundSize: '220%',
         }}
@@ -45,8 +51,13 @@ function ZoomImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+type ProductImage = { url: string; altText: string | null };
+
 export default function ProductClientView({ product, handle }: { product: any; handle: string }) {
-  const images: string[] = product.images?.edges.map((edge: any) => edge.node.url) || [];
+  const images: ProductImage[] = (product.images?.edges ?? []).map((edge: any) => ({
+    url: edge.node.url,
+    altText: edge.node.altText ?? null,
+  }));
   const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -81,25 +92,33 @@ export default function ProductClientView({ product, handle }: { product: any; h
             className="scrollbar-hide flex w-full snap-x snap-mandatory gap-1 overflow-x-auto md:block md:snap-none md:gap-0 md:overflow-visible"
             onScroll={handleScroll}
           >
-            {images.map((url: string, idx: number) => (
-              <div
-                key={idx}
-                ref={(el) => {
-                  imageRefs.current[idx] = el;
-                }}
-                className="w-full min-w-full shrink-0 snap-center md:mb-3 md:min-w-0 md:last:mb-0"
-              >
-                {idx === 0 ? (
-                  <ViewTransition name={`product-${handle}`} default="none" share="v4v-morph">
-                    <div>
-                      <ZoomImage src={url} alt={`${product.title}-${idx}`} />
-                    </div>
-                  </ViewTransition>
-                ) : (
-                  <ZoomImage src={url} alt={`${product.title}-${idx}`} />
-                )}
-              </div>
-            ))}
+            {images.map((image: ProductImage, idx: number) => {
+              // 대체 텍스트가 'model:'로 시작하면 모델컷으로 보고 스펙 주석을 답니다.
+              const spec = parseModelSpec(image.altText);
+              const frame = spec ? (
+                <ModelShot src={image.url} alt={`${product.title} — model`} spec={spec} />
+              ) : (
+                <ZoomImage src={image.url} alt={`${product.title}-${idx}`} />
+              );
+
+              return (
+                <div
+                  key={idx}
+                  ref={(el) => {
+                    imageRefs.current[idx] = el;
+                  }}
+                  className="w-full min-w-full shrink-0 snap-center md:mb-3 md:min-w-0 md:last:mb-0"
+                >
+                  {idx === 0 ? (
+                    <ViewTransition name={`product-${handle}`} default="none" share="v4v-morph">
+                      <div>{frame}</div>
+                    </ViewTransition>
+                  ) : (
+                    frame
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-5 flex justify-center gap-2 md:hidden">
@@ -118,7 +137,7 @@ export default function ProductClientView({ product, handle }: { product: any; h
         <div className="relative w-full px-6 md:w-[42%] md:max-w-[430px] md:px-0">
           <div className="flex flex-col gap-6 md:sticky md:top-32 md:flex-row md:gap-8">
             <div className="hidden w-11 shrink-0 flex-col gap-2 md:flex">
-              {images.map((url: string, idx: number) => (
+              {images.map((image: ProductImage, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => handleThumbnailClick(idx)}
@@ -130,7 +149,16 @@ export default function ProductClientView({ product, handle }: { product: any; h
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" className="h-full w-full object-contain" />
+                  <img
+                    src={sizedImage(image.url, 96)}
+                    srcSet={sizedSrcSet(image.url, [96, 144])}
+                    sizes="44px"
+                    width={44}
+                    height={55}
+                    loading="lazy"
+                    alt=""
+                    className="h-full w-full object-contain"
+                  />
                 </button>
               ))}
             </div>

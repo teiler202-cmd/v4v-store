@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const LOGO_SRC = encodeURI('/V4V_SlubTee_로고_정방향 copy.png');
+const LOGO_SRC = '/v4v-logo-stacked.png';
 const SLOGAN = ['VISION', 'IN', 'MOTION,', 'PERFORMANCE', 'IN', 'ACTION'];
 
 const SILK = [0.16, 1, 0.3, 1] as const;
@@ -310,7 +310,7 @@ export default function Intro() {
                   transition={{ duration: phase === 'sand' ? 0.4 : 1.4, delay: phase === 'sand' ? 0 : 2.4, ease: SILK }}
                   className="mt-12 font-mono text-[8px] uppercase tracking-[0.5em] text-ink md:mt-16 md:text-[9px]"
                 >
-                  Touch
+                  
                 </motion.span>
               </div>
             )}

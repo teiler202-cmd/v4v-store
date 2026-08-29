@@ -2,21 +2,16 @@
 
 import { useState } from 'react';
 import { useCart } from './CartProvider';
+import { getSizeOption, isVariantAvailable, resolveVariantId } from '@/lib/variant';
 
 export default function ProductForm({ product }: { product: any }) {
   const { addToCart, setIsCartOpen } = useCart();
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [error, setError] = useState(false);
 
-  const sizeOption = product.options?.find(
-    (opt: any) => opt.name === 'Size' || opt.name === 'Title'
-  );
-
-  // Shopify는 옵션이 없는 상품에 'Default Title'을 붙입니다 — 사용자에게 보여줄 선택지가 아닙니다.
-  const rawValues: string[] = sizeOption?.values ?? [];
-  const values = rawValues.filter((v) => v !== 'Default Title');
-  const isOneSize = values.length === 0;
-  const sizes = isOneSize ? ['One Size'] : values;
+  const sizeOption = getSizeOption(product);
+  const isOneSize = !sizeOption;
+  const sizes = sizeOption?.values ?? ['One Size'];
 
   const handleAddToCart = () => {
     if (!isOneSize && !selectedSize) {
@@ -24,14 +19,13 @@ export default function ProductForm({ product }: { product: any }) {
       return;
     }
 
-    const selectedVariant = product.variants?.edges?.find((edge: any) => {
-      return (
-        edge.node.selectedOptions?.some((opt: any) => opt.value === selectedSize) ||
-        edge.node.title === selectedSize
-      );
-    })?.node;
+    const variantId = resolveVariantId(product, isOneSize ? undefined : selectedSize);
 
-    const variantId = selectedVariant ? selectedVariant.id : product.variants?.edges[0]?.node?.id;
+    // Variant를 못 찾으면 담지 않습니다 — 담아봤자 결제 단계에서 실패합니다.
+    if (!variantId) {
+      setError(true);
+      return;
+    }
 
     addToCart({
       id: variantId,
@@ -43,6 +37,8 @@ export default function ProductForm({ product }: { product: any }) {
 
     setIsCartOpen(true);
   };
+
+  const soldOut = !isVariantAvailable(product, isOneSize ? undefined : selectedSize);
 
   return (
     <div className="flex w-full flex-col gap-8">
@@ -82,9 +78,10 @@ export default function ProductForm({ product }: { product: any }) {
 
       <button
         onClick={handleAddToCart}
-        className="w-full shrink-0 bg-ink py-4.5 font-mono text-[9.5px] uppercase tracking-[0.28em] text-paper transition-opacity duration-500 ease-silk hover:opacity-80 md:py-5"
+        disabled={soldOut}
+        className="w-full shrink-0 bg-ink py-4.5 font-mono text-[9.5px] uppercase tracking-[0.28em] text-paper transition-opacity duration-500 ease-silk hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30 md:py-5"
       >
-        Add to Bag
+        {soldOut ? 'Sold Out' : 'Add to Bag'}
       </button>
     </div>
   );

@@ -9,7 +9,7 @@
   --font-mono: var(--v4v-font-mono), ui-monospace, "SF Mono", Menlo, monospace;
   --font-grotesk: var(--v4v-font-grotesk), "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-serif-ko: var(--v4v-font-serif-ko), "Apple SD Gothic Neo", serif;
-  --font-serif-jp: var(--v4v-font-serif-jp), "Hiragino Mincho ProN", serif;
+  --font-serif-jp: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
 
   /* Palette — 종이처럼 따뜻한 화이트, 잉크처럼 깊은 블랙 */
   --color-paper: #ffffff;
@@ -72,6 +72,12 @@ body {
   }
 }
 
+/* 일본어 장식 문구 — 웹폰트를 받지 않고 기기에 있는 명조를 씁니다 */
+.v4v-jp-serif {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP",
+    "Noto Serif CJK JP", serif;
+}
+
 /* =========================================================
    UTILITIES
    ========================================================= */
@@ -93,6 +99,52 @@ body {
 /* 얇은 헤어라인 — 브랜드 전반의 구분선 */
 @utility hairline {
   border-color: var(--color-line-soft);
+}
+
+/* =========================================================
+   BILINGUAL
+   영문·국문을 함께 두고, 사용자의 언어에 따라 순서와 농도만 바꿉니다.
+   ========================================================= */
+.v4v-bi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+}
+
+.v4v-bi-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.55em;
+}
+
+.v4v-bi-en,
+.v4v-bi-ko {
+  display: block;
+}
+
+.v4v-bi-ko {
+  word-break: keep-all;
+}
+
+/* 기본은 영문 우선 */
+.v4v-bi-ko {
+  opacity: 0.52;
+}
+
+/* 한국어 사용자에겐 국문을 앞에, 또렷하게 */
+html[data-lang='ko'] .v4v-bi {
+  flex-direction: column-reverse;
+}
+html[data-lang='ko'] .v4v-bi-inline {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+html[data-lang='ko'] .v4v-bi-ko {
+  opacity: 1;
+}
+html[data-lang='ko'] .v4v-bi-en {
+  opacity: 0.52;
 }
 
 /* =========================================================
@@ -123,14 +175,6 @@ html[data-intro="playing"] .v4v-chrome {
 /* =========================================================
    VIEW TRANSITIONS — 페이지 이동을 스윽 이어붙입니다.
    ========================================================= */
-::view-transition-old(.v4v-page) {
-  animation: v4v-page-out 340ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-::view-transition-new(.v4v-page) {
-  animation: v4v-page-in 760ms var(--ease-silk) 180ms both;
-}
-
 @keyframes v4v-page-out {
   from {
     opacity: 1;
@@ -193,7 +237,9 @@ html[data-intro="playing"] .v4v-chrome {
   animation: none;
 }
 
-/* 남는 배경 레이어. 브라우저가 본문을 root로 잡는 경우에도 같은 호흡을 유지합니다. */
+/* 본문은 root 스냅샷(= 뷰포트 크기)으로 통째로 크로스페이드됩니다.
+   페이지 높이만큼 늘어난 상자에 화면 크기 스냅샷을 억지로 채우지 않기 때문에
+   position:fixed 요소(에세이 인덱스 등)가 부풀어 오르지 않습니다. */
 ::view-transition-old(root) {
   animation: v4v-page-out 340ms cubic-bezier(0.4, 0, 1, 1) both;
 }

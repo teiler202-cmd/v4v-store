@@ -1,20 +1,21 @@
 import { notFound } from 'next/navigation';
+import { shopifyFetch } from '@/lib/shopify-config';
 
 // 1. 쇼피파이 API를 호출해서 정책 데이터를 가져오는 함수
+// URL 경로를 쇼피파이 GraphQL API 키워드로 변환.
+//
+// 일반 객체 대신 Map을 씁니다 — 객체였을 때는 'constructor'나 'toString' 같은
+// 자바스크립트 내장 이름을 주소에 넣으면 검사를 통과해 버려서,
+// 엉뚱한 문자열이 GraphQL 질의문에 그대로 끼어 들어갔습니다.
+const POLICY_MAP = new Map<string, string>([
+  ['terms-of-service', 'termsOfService'],
+  ['privacy-policy', 'privacyPolicy'],
+  ['refund-policy', 'refundPolicy'],
+  ['shipping-policy', 'shippingPolicy'],
+]);
+
 async function getShopifyPolicy(type: string) {
-  // 환경변수 이름이 프로젝트마다 다를 수 있어 두 가지 경우를 모두 대비합니다.
-  const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || process.env.SHOPIFY_STORE_DOMAIN;
-  const storefrontAccessToken = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-
-  // URL 경로를 쇼피파이 GraphQL API 키워드로 변환
-  const policyMap: Record<string, string> = {
-    'terms-of-service': 'termsOfService',
-    'privacy-policy': 'privacyPolicy',
-    'refund-policy': 'refundPolicy',
-    'shipping-policy': 'shippingPolicy',
-  };
-
-  const queryName = policyMap[type];
+  const queryName = POLICY_MAP.get(type);
   if (!queryName) return null;
 
   const query = `
@@ -28,23 +29,9 @@ async function getShopifyPolicy(type: string) {
     }
   `;
 
-  try {
-    const res = await fetch(`https://${domain}/api/2024-01/graphql.json`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': storefrontAccessToken as string,
-      },
-      body: JSON.stringify({ query }),
-      next: { revalidate: 3600 } // 1시간마다 쇼피파이와 동기화
-    });
-    
-    const json = await res.json();
-    return json.data.shop[queryName];
-  } catch (error) {
-    console.error('정책 데이터를 불러오는데 실패했습니다:', error);
-    return null;
-  }
+  // 1시간마다 쇼피파이와 동기화합니다.
+  const data = await shopifyFetch<any>(query, undefined, { revalidate: 3600 });
+  return data?.shop?.[queryName] ?? null;
 }
 
 // 2. 화면에 그려주는 메인 컴포넌트

@@ -1,37 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# V4V — vision4visionary.com
 
-## Getting Started
-
-First, run the development server:
+VISION FOR VISIONARY 온라인 스토어. Next.js 16 (App Router) + 쇼피파이 스토어프론트 API.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev      # 개발 서버
+npm run build    # 프로덕션 빌드
+npm run start    # 빌드 결과 실행 (3001)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 환경변수
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.local` 에 둡니다. **NEXT_PUBLIC_ 접두사가 붙은 값은 브라우저에 그대로 노출됩니다.**
 
-## Learn More
+### 필수 — 스토어
 
-To learn more about Next.js, take a look at the following resources:
+| 이름 | 설명 |
+|---|---|
+| `SHOPIFY_STORE_DOMAIN` | `xxxx.myshopify.com` |
+| `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | 스토어프론트 API 토큰 |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 선택 — 브랜드 이메일 (`lib/email`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+메일 **디자인**은 이 값들 없이도 완성되어 있습니다. 아래는 '우리 서버가 직접
+메일을 보내는' 기능(뉴스레터)에만 필요합니다. 쇼피파이가 보내는 주문·계정 메일은
+Liquid 템플릿을 관리자에 붙여 넣는 것으로 끝나며, 환경변수가 필요 없습니다.
 
-## Deploy on Vercel
+| 이름 | 설명 |
+|---|---|
+| `SHOPIFY_ADMIN_ACCESS_TOKEN` | 마케팅 수신 동의를 기록할 Admin API 토큰 (`read_customers`, `write_customers`). **이 값이 있어야 푸터에 뉴스레터 구독 창구가 나타납니다.** |
+| `RESEND_API_KEY` | 메일 발송 (Resend). 없으면 발송하지 않고 서버 로그에만 남깁니다. |
+| `EMAIL_FROM` | 예: `V4V <no-reply@vision4visionary.com>` — 도메인 인증이 끝난 주소여야 합니다. |
+| `EMAIL_REPLY_TO` | 생략하면 고객센터 주소 |
+| `EMAIL_SECRET` | 수신거부 링크 서명용 임의의 긴 문자열. 없으면 마케팅 메일을 보내지 않습니다. |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 선택 — AI 상담 도우미 (`lib/cs`)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# v4v-store
+| 이름 | 설명 |
+|---|---|
+| `ANTHROPIC_API_KEY` | 없으면 도우미가 답을 지어내는 대신 고객센터를 안내합니다. |
+| `CS_MODEL` | 기본 `claude-opus-5` |
+
+---
+
+## 브랜드 이메일 시스템
+
+브랜드가 보내는 모든 메일 — 계정, 주문, 배송, 마케팅 — 이 하나의 디자인
+시스템에서 나옵니다. 사이트의 타이포·색·버튼 규칙을 메일에서 살아남는 형태
+(표 레이아웃 + 인라인 스타일)로 옮긴 것입니다.
+
+```
+lib/brand.ts          브랜드의 사실 (연락처, 사업자 정보, 정책 링크)
+lib/email/theme.ts    색·폰트·타이포 토큰
+lib/email/blocks.ts   조각 (제목, 버튼, 상품 줄, 합계, 상품 그리드…)
+lib/email/layout.ts   껍데기 (로고 머리 / 본문 / 발) · 언어 전환
+lib/email/templates.ts 템플릿 12종 × 한국어·영문
+lib/email/shopify.ts  같은 템플릿을 쇼피파이 Liquid 로 변환 (언어별)
+lib/email/send.ts     발송 (Resend)
+```
+
+### 푸터
+
+손님에게 쓸모 있는 것(정책·소셜·수신거부)을 위에 두고, 법정 표기는 가장 아래에
+9.5px 로 세 줄로 압축해 둡니다.
+
+### 언어
+
+모든 템플릿이 `lang: 'ko' | 'en'` 을 받습니다. 두 언어를 한 통에 섞지 않고
+아예 다른 메일을 만듭니다. (영문 대문자 마이크로 라벨은 두 판본 모두에 남습니다 —
+번역할 글이 아니라 이 브랜드의 조판 요소입니다.)
+
+- **우리가 보내는 메일** — 뉴스레터 폼이 화면의 `html[data-lang]` 을 함께 보내고,
+  그 언어의 판본으로 발송됩니다.
+- **쇼피파이가 보내는 메일** — 스토어에 언어를 추가하면(설정 → 언어) 알림 편집기
+  상단에 언어 선택이 생깁니다. 한국어 자리에는 ko 판본을, 영어 자리에는 en 판본을
+  붙여 넣으면 손님의 언어에 맞는 메일이 나갑니다. 언어가 하나뿐인 스토어라면
+  원하는 판본 하나만 붙이면 됩니다.
+
+### 미리보기 — `/studio/emails`
+
+개발 중에만 열리는 작업대입니다. 12종 × 두 언어를 실제 크기로 확인하고, 플레인
+텍스트 버전을 보고, 내 메일함으로 시험 발송하고, 쇼피파이용 Liquid 를 언어별로
+복사합니다. 한 통을 창 가득 띄워 보려면
+`/studio/emails/preview?t=<템플릿>&lang=ko&local=1` 을 직접 엽니다.
+
+### 쇼피파이가 보내는 메일 바꾸기
+
+가입 환영·주문 확인 같은 메일은 우리 서버가 아니라 쇼피파이가 보냅니다.
+`/studio/emails` 에서 언어를 고르고 해당 템플릿을 연 뒤 **LIQUID** 탭 → `Copy Liquid` 후,
+쇼피파이 관리자 → 설정 → 알림 → 해당 알림 → 이메일 본문 편집에 붙여 넣습니다.
+(제목도 함께 바꿔 주세요.) 대상: 고객 계정 환영 / 계정 활성화 / 비밀번호 재설정 /
+주문 확인 / 배송 확인 / 결제하지 않은 장바구니 / 환불 알림.
+
+---
+
+## AI 상담 도우미
+
+화면 오른쪽 아래에 상주합니다. 모델 호출은 전부 서버(`app/api/cs/route.ts`)에서
+일어나고, 브라우저는 우리 서버하고만 통신합니다.
+
+도우미가 아는 것은 세 가지입니다.
+
+1. `lib/cs/knowledge.ts` 의 브랜드 지식 (잘 바뀌지 않는 것)
+2. 쇼피파이의 **실제 정책 본문**과 **판매 중인 상품 목록** — 매번 읽어 옵니다
+3. 로그인한 손님의 최근 주문 3건 (주소·전화번호는 넘기지 않습니다)
+
+`lib/cs/prompt.ts` 의 규칙이 도우미의 성격입니다. 핵심은 '지어내지 않기' 입니다 —
+가격·재고·배송일·환불 가능 여부를 모르면 고객센터로 넘기게 되어 있습니다.
+
+> ⚠️ 대화 내용과 로그인 손님의 주문 요약이 Anthropic 으로 전송됩니다.
+> 개인정보처리방침에 'AI 상담 처리를 위한 국외 이전' 항목을 추가해 두세요.

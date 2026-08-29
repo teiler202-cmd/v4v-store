@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useCart } from '@/components/CartProvider';
+import { useAccount } from '@/components/AccountProvider';
 
 const NAV = [
   { href: '/', label: 'Shop' },
@@ -16,6 +17,7 @@ const NAV = [
 
 export default function Header() {
   const { cart, setIsCartOpen } = useCart();
+  const { customer } = useAccount();
   const totalItems = cart?.reduce((t, i) => t + i.quantity, 0) || 0;
   const pathname = usePathname();
   const [condensed, setCondensed] = useState(false);
@@ -33,7 +35,6 @@ export default function Header() {
 
   return (
     <header
-      style={{ viewTransitionName: 'v4v-header' }}
       className={`v4v-chrome sticky top-0 z-40 w-full border-b bg-paper/85 text-ink backdrop-blur-xl backdrop-saturate-150 transition-[padding,border-color] duration-700 ease-silk ${
         condensed ? 'border-line-soft' : 'border-transparent'
       }`}
@@ -56,7 +57,7 @@ export default function Header() {
             className="flex items-center justify-center transition-opacity duration-500 ease-silk hover:opacity-45"
           >
             <Image
-              src="/V4V_SlubTee_로고(가로쭉).png"
+              src="/v4v-logo-horizontal.png"
               alt="V4V"
               width={400}
               height={60}
@@ -67,7 +68,36 @@ export default function Header() {
           </Link>
         </div>
 
-        <div className="flex w-[30%] items-center justify-end">
+        <div className="flex w-[30%] items-center justify-end gap-4 md:gap-5">
+          {/* 마이페이지 — 로그인 전에는 로그인 화면으로, 로그인 후에는 마이페이지로 이어집니다.
+              (/account 가 서버에서 세션을 확인해 알아서 갈라줍니다) */}
+          <Link
+            href="/account"
+            aria-label={customer ? 'My account' : 'Sign in'}
+            title={customer ? customer.displayName || customer.email : 'Sign in'}
+            className="relative flex items-center text-ink transition-opacity duration-300 hover:opacity-45"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.1"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-[15px] w-[15px] md:h-4 md:w-4"
+              aria-hidden
+            >
+              <circle cx="12" cy="8.2" r="3.9" />
+              <path d="M4.6 20.2c0-3.7 3.3-6.2 7.4-6.2s7.4 2.5 7.4 6.2" />
+            </svg>
+            {customer && (
+              <span
+                aria-hidden
+                className="absolute -right-[3px] -top-[1px] h-[3px] w-[3px] rounded-full bg-ink"
+              />
+            )}
+          </Link>
+
           <button
             onClick={() => setIsCartOpen(true)}
             className="font-mono text-[9px] uppercase tracking-[0.24em] text-ink transition-opacity duration-300 hover:opacity-45 md:text-[10px]"
