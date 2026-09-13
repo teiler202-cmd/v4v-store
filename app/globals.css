@@ -248,6 +248,54 @@ html[data-intro="playing"] .v4v-chrome {
 }
 
 /* =========================================================
+   OPS — 운영 보드의 파이프
+
+   비전에서 오늘까지 한 줄기로 흐릅니다. 층과 층 사이의 관은
+   달성률만큼 차오르고, 그만큼 굵어지고, 그만큼 빨리 흐릅니다.
+   숫자 하나(--flow: 0–1)가 굵기·밝기·속도를 동시에 움직입니다 —
+   막대 그래프를 따로 두지 않아도 진행이 몸으로 읽힙니다.
+   ========================================================= */
+@keyframes v4v-ops-flow {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* 관을 타고 내려가는 빛 한 줄기 */
+.v4v-flow-stream {
+  animation: v4v-ops-flow calc(3.4s - var(--flow, 0) * 2s) linear infinite;
+}
+
+/* 층이 바뀔 때 아래 내용이 한 번 스며들 듯 들어옵니다 */
+@keyframes v4v-ops-settle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.v4v-settle {
+  animation: v4v-ops-settle 520ms var(--ease-silk) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v4v-flow-stream {
+    animation: none;
+    opacity: 0.5;
+  }
+  .v4v-settle {
+    animation: none;
+  }
+}
+
+/* =========================================================
    REDUCED MOTION
    ========================================================= */
 @media (prefers-reduced-motion: reduce) {

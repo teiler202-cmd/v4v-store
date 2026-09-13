@@ -13,8 +13,8 @@ import { SHOPIFY_TIMEOUT_MS, hasShopifyConfig, shopifyEndpoint, shopifyToken } f
  */
 
 const CART_CREATE = `
-  mutation cartCreate($lines: [CartLineInput!]!, $buyerIdentity: CartBuyerIdentityInput) {
-    cartCreate(input: { lines: $lines, buyerIdentity: $buyerIdentity }) {
+  mutation cartCreate($lines: [CartLineInput!]!, $buyerIdentity: CartBuyerIdentityInput, $discountCodes: [String!]) {
+    cartCreate(input: { lines: $lines, buyerIdentity: $buyerIdentity, discountCodes: $discountCodes }) {
       cart {
         id
         checkoutUrl
@@ -42,9 +42,19 @@ const MAX_QUANTITY = 20;
 /** 쇼피파이 상품 옵션(Variant) 식별자 형식 */
 const VARIANT_ID = /^gid:\/\/shopify\/ProductVariant\/\d+$/;
 
+/**
+ * 할인 코드에 쓰이는 글자만 허용합니다.
+ *
+ * 코드가 맞는지 틀린지는 쇼피파이가 판단합니다 — 여기서는 형식만 봅니다.
+ * 우리가 "그런 코드 없습니다"라고 답하면, 그 답 자체가 유효한 코드를
+ * 하나씩 찍어보는 도구가 됩니다. 창립 멤버 코드는 번호가 연속이라
+ * 특히 그렇습니다.
+ */
+const DISCOUNT_CODE = /^[A-Za-z0-9_-]{3,40}$/;
+
 export async function createCheckout(
   lineItems: { variantId: string; quantity: number }[],
-  options?: { asGuest?: boolean }
+  options?: { asGuest?: boolean; discountCode?: string }
 ): Promise<CheckoutResult> {
   // 장바구니는 손님 브라우저에 저장되어 있어 얼마든지 고쳐 보낼 수 있습니다.
   // (결제 금액은 쇼피파이가 서버에서 다시 계산하므로 가격 조작은 불가능하지만,
@@ -79,6 +89,17 @@ export async function createCheckout(
   const sessionToken = options?.asGuest ? null : await getSessionToken();
   const buyerIdentity = sessionToken ? { customerAccessToken: sessionToken } : undefined;
 
+  /**
+   * 할인 코드는 장바구니에 미리 붙여서 넘깁니다 —
+   * 손님이 쇼피파이 결제창에서 다시 입력하지 않아도 되고,
+   * 유효한지는 그 화면에서 금액으로 바로 확인됩니다.
+   *
+   * 창립 멤버 코드는 고객 계정에 묶여 있어 로그인 상태에서만 통합니다.
+   * 그래서 비회원 주문(buyerIdentity 없음)으로 넘기면 조용히 무시됩니다.
+   */
+  const rawCode = options?.discountCode?.trim().toUpperCase() ?? '';
+  const discountCodes = rawCode && DISCOUNT_CODE.test(rawCode) ? [rawCode] : undefined;
+
   try {
     const response = await fetch(shopifyEndpoint(), {
       method: 'POST',
@@ -86,7 +107,7 @@ export async function createCheckout(
         'Content-Type': 'application/json',
         'X-Shopify-Storefront-Access-Token': shopifyToken(),
       },
-      body: JSON.stringify({ query: CART_CREATE, variables: { lines, buyerIdentity } }),
+      body: JSON.stringify({ query: CART_CREATE, variables: { lines, buyerIdentity, discountCodes } }),
       cache: 'no-store', // 결제창은 매번 새로 생성해야 함
       signal: AbortSignal.timeout(SHOPIFY_TIMEOUT_MS),
     });

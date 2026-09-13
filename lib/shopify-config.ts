@@ -19,6 +19,30 @@ export const SHOPIFY_API_VERSION = '2025-10';
 /** 쇼피파이가 느릴 때 페이지 전체가 매달리지 않도록 하는 상한 */
 export const SHOPIFY_TIMEOUT_MS = 8000;
 
+/**
+ * 스토어프론트가 알아듣는 언어.
+ *
+ * 로케일을 '게시'하는 것만으로는 부족합니다 — 쇼피파이는 언어를 도메인마다 있는
+ * '웹 프레즌스'에 매답니다. 실제로 en 을 게시했는데도 스토어프론트가 KO 만 돌려준
+ * 적이 있는데, 영어가 사이트가 쓰지 않는 다른 도메인의 웹 프레즌스에 붙어 있었습니다.
+ * 언어를 추가할 때는 '설정 → 마켓 → 언어'에서 이 도메인에 붙었는지 확인하세요.
+ */
+export type StorefrontLanguage = 'KO' | 'EN' | 'JA';
+
+/**
+ * 쿼리에 붙일 @inContext 지시자.
+ *
+ * ⚠️ 위의 API 버전과 똑같은 함정이 여기에도 있습니다 —
+ *    게시되지 않은 로케일을 요청하면 쇼피파이는 오류를 내지 않고 조용히
+ *    기본 언어로 돌려줍니다. EN 을 요청했을 때 실제 응답은
+ *    extensions.context = { country: "KR", language: "KO" } 였습니다.
+ *    글자가 한국어로 나올 뿐 화면은 멀쩡해서, 경고가 없으면 아무도 눈치채지 못합니다.
+ *    그래서 shopifyFetch 가 '돌아온 언어'를 '요청한 언어'와 대조합니다.
+ */
+export function inContext(language?: StorefrontLanguage) {
+  return language ? ` @inContext(language: ${language})` : '';
+}
+
 function requireEnv() {
   const domain =
     process.env.SHOPIFY_STORE_DOMAIN || process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || '';
@@ -55,7 +79,7 @@ export function hasShopifyConfig() {
 export async function shopifyFetch<T = any>(
   query: string,
   variables?: Record<string, unknown>,
-  init?: { revalidate?: number; noStore?: boolean }
+  init?: { revalidate?: number; noStore?: boolean; language?: StorefrontLanguage }
 ): Promise<T> {
   if (!hasShopifyConfig()) {
     throw new Error('[shopify] 접속 정보가 없습니다 — SHOPIFY_STORE_DOMAIN / SHOPIFY_STOREFRONT_ACCESS_TOKEN 확인');
@@ -81,6 +105,16 @@ export async function shopifyFetch<T = any>(
   if (body.errors?.length) {
     // 메시지만 남깁니다 — 응답 본문 전체를 로그에 쏟으면 토큰·개인정보가 섞일 수 있습니다.
     throw new Error(`[shopify] ${body.errors.map((e: any) => e?.message).join(' / ')}`);
+  }
+
+  // 요청한 언어와 실제로 서빙된 언어가 다르면, 그 로케일이 게시되지 않았다는 뜻입니다.
+  // 조용히 넘어가면 '번역을 붙였는데 왜 안 나오지'로 며칠을 태우게 됩니다.
+  const served = body?.extensions?.context?.language;
+  if (init?.language && served && served !== init.language) {
+    console.warn(
+      `[shopify] ${init.language} 로 요청했지만 ${served} 로 응답했습니다 — ` +
+        `쇼피파이 관리자 → 설정 → 언어에서 그 로케일이 '게시됨' 상태인지 확인하세요.`
+    );
   }
 
   return body.data as T;

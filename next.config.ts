@@ -79,6 +79,17 @@ const nextConfig: NextConfig = {
   // 서버 종류를 광고하지 않습니다.
   poweredByHeader: false,
 
+  /**
+   * 운영 보드의 영역 문서는 content/ops/*.md 를 런타임에 읽습니다.
+   * Next 는 코드에서 import 한 것만 배포에 담기 때문에, 경로로만 읽는
+   * 이 파일들은 여기서 따로 일러 주지 않으면 배포된 곳에서 사라집니다.
+   * (로컬에서는 멀쩡하다가 배포 후에야 404 가 나는 종류의 문제입니다)
+   */
+  outputFileTracingIncludes: {
+    '/ops/docs': ['./content/ops/**/*'],
+    '/ops/docs/[slug]': ['./content/ops/**/*'],
+  },
+
   // React <ViewTransition> 연동은 Next 16.3부터 기본 동작이라 설정이 필요 없습니다.
   // (16.2까지 쓰던 experimental.viewTransition 플래그는 제거됐습니다 —
   //  남겨 두면 빌드가 타입 검사에서 실패합니다)

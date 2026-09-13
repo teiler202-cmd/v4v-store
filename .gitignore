@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# V4V ops migration snapshot (business data — never commit)
+/ops-migration/

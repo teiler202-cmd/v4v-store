@@ -10,6 +10,8 @@ import { useAccount } from '@/components/AccountProvider';
 const NAV = [
   { href: '/', label: 'Shop' },
   { href: '/archives', label: 'Archives' },
+  // 커뮤니티가 모이는 방 — 아카이브와 에세이 사이, 브랜드의 '지금'이 있는 자리입니다.
+  { href: '/telegram', label: 'Telegram' },
   { href: '/essay', label: 'Essay' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },

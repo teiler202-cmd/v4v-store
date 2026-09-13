@@ -4,6 +4,8 @@ import { useRef, useState } from 'react';
 import { ViewTransition } from 'react';
 import Link from 'next/link';
 import ProductForm from '@/components/ProductForm';
+import Bilingual from '@/components/Bilingual';
+import { CONTACT } from '@/lib/brand';
 import ModelShot from '@/components/ModelShot';
 import { parseModelSpec } from '@/lib/modelSpec';
 import { sizedImage, sizedSrcSet } from '@/lib/image';
@@ -182,6 +184,58 @@ export default function ProductClientView({ product, handle }: { product: any; h
               </div>
 
               <ProductForm product={product} />
+
+              {/* 결제 전에 반드시 보이는 자리 — 배송에 걸리는 기간과 무를 수 있는 기간.
+                  전자상거래법상 '재화의 공급 시기'는 상품 화면에서 알 수 있어야 하고,
+                  카드사·PG 심사도 이 표기를 상품 페이지에서 확인합니다.
+                  숫자는 /policies/shipping-policy · refund-policy 와 같은 값입니다. */}
+              <dl className="grid grid-cols-[4.6rem_1fr] gap-x-3 gap-y-2 border-t border-line-soft pt-8 text-[10px] font-light leading-[1.85] tracking-[0.02em] text-ash md:text-[10.5px]">
+                <dt className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink">
+                  Shipping
+                </dt>
+                <dd>
+                  <Bilingual
+                    en="Dispatched within 1–3 business days of payment · delivered within 14 days (Korea). Pre-order and made-to-order pieces follow the date stated above."
+                    ko="결제 완료 후 영업일 기준 1~3일 이내 출고 · 국내 수령까지 최대 14일 이내. 프리오더 · 주문제작 상품은 위 상세 설명에 표기된 일정을 따릅니다."
+                  />
+                </dd>
+
+                <dt className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink">
+                  Returns
+                </dt>
+                <dd>
+                  <Bilingual
+                    en="Withdrawal within 7 days of delivery · refunded within 3 business days of return."
+                    ko="상품 수령일로부터 7일 이내 청약철회 · 반품 확인 후 3영업일 이내 환불."
+                  />
+                </dd>
+
+                <dt className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink">
+                  Contact
+                </dt>
+                <dd>
+                  <a className="underline underline-offset-4" href={`mailto:${CONTACT.cs}`}>
+                    {CONTACT.cs}
+                  </a>
+                  {' · '}
+                  <a className="underline underline-offset-4" href={`tel:${CONTACT.phone.replace(/\s/g, '')}`}>
+                    {CONTACT.phoneKo}
+                  </a>
+                </dd>
+
+                <dt className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-ink">
+                  Policy
+                </dt>
+                <dd className="[&_a]:underline [&_a]:underline-offset-4">
+                  <Link href="/policies/shipping-policy">
+                    <Bilingual en="Shipping" ko="배송 정책" inline />
+                  </Link>
+                  {' · '}
+                  <Link href="/policies/refund-policy">
+                    <Bilingual en="Refunds" ko="교환 · 환불" inline />
+                  </Link>
+                </dd>
+              </dl>
             </div>
           </div>
         </div>

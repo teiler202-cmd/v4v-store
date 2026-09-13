@@ -48,6 +48,24 @@ export const SOCIAL = [
   { label: 'YouTube', href: 'https://youtube.com/@vision4visionary' },
 ] as const;
 
+/**
+ * 커뮤니티가 실제로 모이는 방.
+ *
+ * ⚠️ 텔레그램에서 그룹을 만든 뒤, 그 초대 링크로 아래 기본값을 바꾸세요.
+ *    (그룹 → 관리 → 초대 링크). 공개 그룹이면 https://t.me/사용자이름,
+ *    비공개 그룹이면 https://t.me/+무작위문자열 형태입니다.
+ *
+ *    배포처에서 바꿔 끼우고 싶다면 NEXT_PUBLIC_TELEGRAM_INVITE 를 쓰세요 —
+ *    초대 링크는 애초에 손님에게 보여 줄 값이라 공개돼도 문제가 없습니다.
+ *
+ *    비공개 그룹 링크는 '취소'가 가능합니다. 링크가 엉뚱한 곳에 퍼지면
+ *    텔레그램에서 링크를 폐기하고 새로 발급한 뒤 이 값만 바꾸면 됩니다.
+ */
+export const COMMUNITY = {
+  telegram: process.env.NEXT_PUBLIC_TELEGRAM_INVITE || 'https://t.me/+uRX9FEqPBhdiMDNl',
+  telegramLabel: 'V4V 커뮤니티',
+} as const;
+
 export const POLICY_LINKS = [
   { label: 'Terms of Service', labelKo: '이용약관', path: '/policies/terms-of-service' },
   { label: 'Privacy Policy', labelKo: '개인정보처리방침', path: '/policies/privacy-policy' },

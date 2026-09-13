@@ -6,12 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ops:seed": "node --env-file=.env.local scripts/ops-seed.mjs",
+    "ops:member": "node --env-file=.env.local scripts/ops-member.mjs",
+    "ops:q": "node --env-file=.env.local scripts/ops-query.mjs",
+    "ops:migrate": "node --env-file=.env.local scripts/ops-migrate.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
     "framer-motion": "^12.38.0",
     "next": "^16.3.2",
+    "postgres": "^3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

@@ -5,6 +5,7 @@ import { MaskUp, Reveal, RevealItem, SILK } from '@/components/Reveal';
 import { motion } from 'framer-motion';
 import SocialLinks from '@/components/SocialLinks';
 import Bilingual from '@/components/Bilingual';
+import { BRAND, BUSINESS, CONTACT } from '@/lib/brand';
 
 const CHANNELS = [
   {
@@ -15,10 +16,10 @@ const CHANNELS = [
       ko: '상품, 배송, 결제 및 반품과 관련된 모든 문의는 아래 공식 이메일 창구를 통해 연락해 주시면 신속하게 안내해 드리겠습니다.',
     },
     note: {
-      en: 'Mon–Fri 10:00–17:00 KST (lunch 12:00–13:00) · Closed weekends & public holidays',
-      ko: '운영 시간: 평일 10:00 — 17:00 (점심시간 12:00 — 13:00) / 주말 및 공휴일 휴무',
+      en: `${CONTACT.hours} · Closed weekends & public holidays · ${CONTACT.phone}`,
+      ko: `운영 시간: ${CONTACT.hoursKo} · 고객센터 ${CONTACT.phoneKo}`,
     },
-    email: 'cs@vision4visionary.com',
+    email: CONTACT.cs,
   },
   {
     title: 'Partnership & Press',
@@ -27,7 +28,7 @@ const CHANNELS = [
       en: 'For brand collaborations, wholesale proposals and press enquiries, please use the dedicated address below.',
       ko: 'V4V와의 브랜드 협업, 입점 제안, 매거진 프레스 등 비즈니스와 관련된 문의는 전용 메일로 남겨주시기 바랍니다.',
     },
-    email: 'partnership@vision4visionary.com',
+    email: CONTACT.partnership,
   },
 ];
 
@@ -104,10 +105,16 @@ export default function ContactPage() {
               </span>
             </div>
             <Bilingual
-              en="Vision for Visionary · Seoul, Republic of Korea"
-              ko="비전포비저너리 (V4V) · 대한민국 서울"
+              en={`${BRAND.name} · ${BUSINESS.address}`}
+              ko={`${BRAND.nameKo} (${BRAND.short}) · ${BUSINESS.addressKo}`}
               className="text-[13px] leading-[1.75] tracking-[-0.012em] text-ash md:text-[13.5px]"
               koClassName={nanum.className}
+            />
+            {/* 전자상거래법 제10조 표기 — 사업자등록증과 같은 값이어야 합니다 */}
+            <Bilingual
+              en={`Representative ${BUSINESS.representative} · Business Reg. No. ${BUSINESS.registrationNo} · Mail-order Licence ${BUSINESS.mailOrderNo}`}
+              ko={`대표자 ${BUSINESS.representativeKo} · 사업자등록번호 ${BUSINESS.registrationNo} · 통신판매업신고 ${BUSINESS.mailOrderNoKo}`}
+              className="font-mono text-[8.5px] uppercase leading-[1.95] tracking-[0.1em] text-ash/80"
             />
           </RevealItem>
 

@@ -9,14 +9,31 @@ import Image from 'next/image'; // 🔥 이미지 컴포넌트 임포트
 import { createCheckout } from '@/app/actions';
 import { sizedImage, sizedSrcSet } from '@/lib/image';
 
+/** 국내 기본 배송비 · 무료 배송 기준 — 배송 정책 페이지와 같은 값 */
+const SHIPPING_FEE = 3000;
+const FREE_SHIPPING_OVER = 100000;
+
 export default function CheckoutPage() {
   const { cart, updateQuantity, hydrated } = useCart();
   const { customer, loading: accountLoading } = useAccount();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
 
   const subtotal = cart.reduce((total, item) => total + (Number(item.price) * item.quantity), 0);
-  const shipping = subtotal > 0 ? 30000 : 0;
+
+  /**
+   * 배송비는 /policies/shipping-policy 에 적힌 값과 같아야 합니다.
+   *
+   * 예전에는 여기에 30,000원이 박혀 있었습니다 — 정책 페이지에는 3,000원,
+   * 결제 직전 화면에는 30,000원. 손님이 보기에는 열 배를 물리는 화면이고,
+   * 카드사·PG 심사에서는 '표시 금액과 실제 청구가 다른 가맹점'으로 읽힙니다.
+   *
+   * 도서·산간 추가 운임과 해외 배송은 주소가 정해져야 계산되므로,
+   * 최종 금액은 쇼피파이 결제창에서 확정됩니다.
+   */
+  const shipping = subtotal > 0 && subtotal < FREE_SHIPPING_OVER ? SHIPPING_FEE : 0;
   const taxes = 0;
   const total = subtotal + shipping + taxes;
   const totalItems = cart.reduce((t, i) => t + i.quantity, 0);
@@ -31,7 +48,7 @@ export default function CheckoutPage() {
       quantity: item.quantity
     }));
 
-    const result = await createCheckout(lineItems, { asGuest });
+    const result = await createCheckout(lineItems, { asGuest, discountCode });
 
     if (result.ok) {
       // 여기서부터는 쇼피파이가 결제를 이어받습니다.
@@ -160,23 +177,36 @@ export default function CheckoutPage() {
                 <span className="text-zinc-600">KRW {subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                {/* 실제 배송비는 주소에 따라 쇼피파이 결제창에서 확정됩니다 */}
-                <Bilingual en="Shipping (calculated at checkout)" ko="배송비 (결제 시 확정)" inline />
-                <span className="text-zinc-600">KRW {shipping.toLocaleString()}</span>
+                {/* 도서·산간 추가 운임과 해외 배송은 주소가 정해져야 계산됩니다 */}
+                <Bilingual en="Shipping (confirmed at checkout)" ko="배송비 (결제 시 확정)" inline />
+                <span className="text-zinc-600">
+                  {shipping === 0 ? (
+                    <Bilingual en="Free" ko="무료" inline />
+                  ) : (
+                    `KRW ${shipping.toLocaleString()}`
+                  )}
+                </span>
               </div>
               <div className="flex justify-between items-end mt-3 md:mt-4 pt-3 md:pt-4 border-t border-zinc-200">
                 <Bilingual en="Total" ko="총액" inline className="font-bold text-[10px] text-black md:text-xs" />
                 <span className="text-lg md:text-xl font-black tracking-tight text-black">KRW {total.toLocaleString()}</span>
               </div>
+
+              {/* 재화의 공급 시기 — 결제를 누르기 전에 읽혀야 합니다 */}
+              <Bilingual
+                en={`Dispatched within 1–3 business days · delivered within 14 days (Korea). Free shipping over KRW ${FREE_SHIPPING_OVER.toLocaleString()}.`}
+                ko={`결제 완료 후 영업일 기준 1~3일 이내 출고 · 국내 수령까지 최대 14일 이내 · ${FREE_SHIPPING_OVER.toLocaleString()}원 이상 무료 배송`}
+                className="mt-3 text-[9px] font-light normal-case leading-[1.8] tracking-normal text-zinc-400 md:text-[9.5px]"
+              />
             </div>
           )}
         </section>
 
         {/* ➡️ 우측 (모바일에선 하단): 회원 / 비회원 주문 선택 */}
-        <section className="flex w-full flex-shrink-0 flex-col items-center justify-center gap-6 border-t border-zinc-200 px-6 py-10 md:w-56 md:border-l md:border-t-0 md:py-0 lg:w-64">
+        <section className="flex w-full flex-shrink-0 flex-col items-center justify-center gap-4 border-t border-zinc-200 px-6 py-10 md:w-56 md:border-l md:border-t-0 md:py-0 lg:w-64">
           {cart.length > 0 && (
             <>
-<Bilingual en="Checkout as" ko="주문 방식" inline className="justify-center font-mono text-[9px] uppercase tracking-[0.18em] text-zinc-400" />
+              <Bilingual en="Checkout as" ko="주문 방식" inline className="justify-center font-mono text-[9px] uppercase tracking-[0.18em] text-zinc-400" />
 
               {accountLoading ? (
                 <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400">
@@ -192,8 +222,8 @@ export default function CheckoutPage() {
                   >
                     {isCheckingOut ? 'Opening…' : 'Checkout'}
                   </button>
-                  <div className="flex flex-col items-center gap-1">
-                    <Bilingual en="Member order" ko="회원 주문" inline className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-zinc-400" />
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Bilingual en="Member order" ko="회원 주문" inline className="justify-center font-mono text-[8.5px] uppercase tracking-[0.12em] text-zinc-400" />
                     <span className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-zinc-400">
                       {customer.firstName || customer.email}
                     </span>
@@ -226,12 +256,47 @@ export default function CheckoutPage() {
                     <Bilingual en="Sign in to order" ko="로그인하고 주문" inline className="justify-center" />
                   </Link>
                   <Bilingual
-                    en="Members get saved addresses and order history"
-                    ko="회원 주문 시 배송지가 저장되고 주문 내역을 확인할 수 있습니다"
-                    className="text-center font-mono text-[8px] uppercase leading-[1.8] tracking-[0.1em] text-zinc-400"
+                    en="Saved address · order history"
+                    ko="배송지 저장 · 주문 내역"
+                    inline
+                    className="justify-center text-center font-mono text-[8px] uppercase tracking-[0.1em] text-zinc-400"
                   />
                 </>
               )}
+
+              {/* 창립 멤버 코드 — 평소엔 접혀 있다가 필요한 사람만 펼칩니다.
+                  코드가 맞는지는 쇼피파이 결제창이 금액으로 답합니다. */}
+              <div className="flex w-full flex-col items-center gap-2 border-t border-zinc-200 pt-4">
+                {codeOpen ? (
+                  <>
+                    <label htmlFor="v4v-code" className="sr-only">
+                      Founder code
+                    </label>
+                    <input
+                      id="v4v-code"
+                      value={discountCode}
+                      onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                      placeholder="V4V-FOUNDER-001"
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="w-full border-b border-zinc-300 bg-transparent pb-2 text-center font-mono text-[9.5px] uppercase tracking-[0.16em] text-zinc-900 outline-none transition-colors duration-500 placeholder:text-zinc-300 focus:border-zinc-900"
+                    />
+                    <Bilingual
+                      en="Applied at checkout · sign in required"
+                      ko="결제창에서 적용 · 로그인 필요"
+                      inline
+                      className="justify-center text-center font-mono text-[8px] uppercase tracking-[0.1em] text-zinc-400"
+                    />
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setCodeOpen(true)}
+                    className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-zinc-400 underline underline-offset-4 transition-colors hover:text-zinc-900"
+                  >
+                    <Bilingual en="Have a code" ko="코드 입력" inline className="justify-center" />
+                  </button>
+                )}
+              </div>
 
               {checkoutError && (
                 <p className="max-w-[220px] text-center font-mono text-[9px] uppercase leading-[1.8] tracking-[0.12em] text-zinc-500">
