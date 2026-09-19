@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { getWorld, prefetchRail, setWorld, type WorldId } from '@/components/orb/world';
+import { getWorld, setWorld, warmWorld, type WorldId } from '@/components/orb/world';
 import { SHOP_CATEGORIES, SHOP_WORLDS } from '@/lib/catalog';
+import { warmNanum } from '@/lib/fonts';
 
 /* -----------------------------------------------------------
    사이트 메뉴 — 두 자리에 같은 메뉴가 놓입니다.
@@ -30,6 +31,20 @@ const WORLD_DOT: Record<string, string> = {
 
 /** 고른 뒤에는 문이 닫히도록 — 클릭이 남긴 포커스가 focus-within으로 패널을 붙들지 않게 합니다. */
 const releaseFocus = (event: { currentTarget: HTMLElement }) => event.currentTarget.blur();
+
+/**
+ * 나눔명조를 쓰는 페이지(About·Essay·Telegram·Contact·Archives)로 가는 메뉴 —
+ * 마우스가 닿거나 포커스·터치가 시작되는 순간 글꼴을 미리 받습니다. 누른 뒤에 받으면 화면이 잠깐 멈춥니다.
+ * 그 밖의 링크는 warmNanum 이 알아서 거릅니다.
+ *
+ * 폰(터치)에서는 닿고 떼기까지가 0.1초 남짓이라, 느린 망이면 누를 때 아직 받는 중일 수 있습니다.
+ * 그때 React 는 기다리지 않고 새 화면을 바로 그리므로, 한글이 잠깐 기기 고딕으로 보였다가 명조로 바뀝니다.
+ * 화면이 멈추는 것보다 낫다고 보고 고른 쪽입니다(마우스는 올리고 누르기까지 틈이 넉넉해 해당 없음).
+ */
+const warmFontFor = (href: string) => {
+  const warm = () => warmNanum(href);
+  return { onPointerEnter: warm, onFocus: warm, onTouchStart: warm };
+};
 
 function useIsActive() {
   const pathname = usePathname();
@@ -63,10 +78,10 @@ function ShopMenu({ placement }: { placement: 'below' | 'side' }) {
             href={`/?world=${key}`}
             // 건너가기 전에 그 세계의 큰 구체 그림을 미리 받아 둡니다 — 마우스든 키보드든.
             onPointerEnter={() => {
-              if (getWorld() !== key) prefetchRail(key as WorldId);
+              if (getWorld() !== key) warmWorld(key as WorldId);
             }}
             onFocus={() => {
-              if (getWorld() !== key) prefetchRail(key as WorldId);
+              if (getWorld() !== key) warmWorld(key as WorldId);
             }}
             onClick={(event) => {
               releaseFocus(event);
@@ -131,6 +146,7 @@ export function TopNav({ className = '' }: { className?: string }) {
             key={isShop ? undefined : href}
             href={href}
             aria-current={active ? 'page' : undefined}
+            {...warmFontFor(href)}
             className={`group relative shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] transition-colors duration-500 ease-silk md:text-[10px] md:tracking-[0.2em] ${
               active ? 'text-ink' : 'text-ash hover:text-ink'
             } ${isShop ? 'group-hover/shop:text-ink' : ''}`}
@@ -175,6 +191,7 @@ export function RailNav({ className = '' }: { className?: string }) {
               <Link
                 href={href}
                 aria-current={active ? 'page' : undefined}
+                {...warmFontFor(href)}
                 // 구체 위의 글자는 온전한 먹색·Medium — 흐린 먹(ink/70)은 대리석 결에 묻혔습니다.
                 // 지금 자리·마우스는 밑줄이 알립니다.
                 className="group block py-1 font-mono text-[11.5px] font-medium uppercase tracking-[0.22em] text-ink"

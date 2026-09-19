@@ -147,7 +147,7 @@ function MediaFrame({
               loop
               muted
               playsInline
-              className="h-full w-full object-cover grayscale-[55%] transition-[filter,transform] duration-[1200ms] ease-silk group-hover:scale-[1.04] group-hover:grayscale-0"
+              className="h-full w-full object-cover grayscale-[55%] transition-[filter,scale] duration-[1200ms] ease-silk group-hover:scale-[1.04] group-hover:grayscale-0"
             />
           ) : (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -155,7 +155,7 @@ function MediaFrame({
               src={item.src}
               alt={`Archive reference ${String(item.id).padStart(3, '0')}`}
               loading="lazy"
-              className="h-full w-full object-cover grayscale-[55%] transition-[filter,transform] duration-[1200ms] ease-silk group-hover:scale-[1.04] group-hover:grayscale-0"
+              className="h-full w-full object-cover grayscale-[55%] transition-[filter,scale] duration-[1200ms] ease-silk group-hover:scale-[1.04] group-hover:grayscale-0"
             />
           )}
 
@@ -235,7 +235,23 @@ function HeroFilm({ item, title }: { item: MediaItem; title: string }) {
     if (!video) return;
 
     video.muted = true; // 음소거여야 자동재생이 허용됩니다
-    const attempt = () => void video.play().catch(() => {});
+
+    /**
+     * 사파리(WebKit)는 '안 보이는' 영상의 자동재생을 거절합니다(NotAllowedError).
+     * 이 필름은 페이지 진입 페이드(투명도 0→1) 도중에 준비되기 때문에, 첫 시도가
+     * 투명도 0.2 즈음에 걸려 거절되고 재생 버튼에 멈춰 있곤 했습니다.
+     * 거절되면 페이드가 끝난 뒤에 몇 번 더 청합니다 — 저전력 모드처럼 끝내 막히면
+     * 재생 버튼이 그대로 남아 손님이 고를 수 있습니다.
+     */
+    const RETRY_MS = [600, 1400, 3000];
+    let tries = 0;
+    let retry = 0;
+    const attempt = () =>
+      void video.play().catch(() => {
+        if (tries >= RETRY_MS.length) return;
+        window.clearTimeout(retry);
+        retry = window.setTimeout(attempt, RETRY_MS[tries++]);
+      });
     attempt();
 
     // 탭을 다시 보게 되면 이어서 재생합니다.
@@ -243,7 +259,10 @@ function HeroFilm({ item, title }: { item: MediaItem; title: string }) {
       if (document.visibilityState === 'visible') attempt();
     };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearTimeout(retry);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [armed]);
 
   const play = () => {

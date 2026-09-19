@@ -143,7 +143,24 @@ export default function Intro() {
     }
   }, [orbImg]);
 
-  useEffect(() => () => timers.current.forEach((id) => window.clearTimeout(id)), []);
+  useEffect(
+    () => () => {
+      timers.current.forEach((id) => window.clearTimeout(id));
+      // 베일이 걷히는 도중(revealing)에 다른 페이지로 떠나면 위에서 finish() 타이머도 함께 지워집니다.
+      // 그대로 두면 <html data-intro>가 세션 내내 'revealing'에 머물러, 홈에 다시 오면 인트로를 안 본 것으로
+      // 읽습니다(readIntroSeen) — 이미 사이트로 넘어간 뒤이니 끝난 것으로 마무리합니다.
+      // (이미 'done'이면 다시 쓰지 않습니다 — 같은 값이어도 속성을 지켜보는 MutationObserver가 깨어납니다)
+      const root = document.documentElement;
+      if (phaseRef.current !== 'leaving' || root.getAttribute('data-intro') === 'done') return;
+      root.setAttribute('data-intro', 'done');
+      try {
+        window.sessionStorage.setItem('v4v:intro', '1');
+      } catch {
+        /* 프라이빗 모드 등 — 무시 */
+      }
+    },
+    [],
+  );
 
   const finish = useCallback(() => {
     document.documentElement.setAttribute('data-intro', 'done');

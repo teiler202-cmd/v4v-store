@@ -8,13 +8,18 @@ import Bilingual from '@/components/Bilingual';
 import { CONTACT } from '@/lib/brand';
 import ModelShot from '@/components/ModelShot';
 import { parseModelSpec } from '@/lib/modelSpec';
-import { sizedImage, sizedSrcSet } from '@/lib/image';
+import { heroSources, sizedImage, sizedSrcSet } from '@/lib/image';
 
 // 기존 backgroundSize: '220%'와 같은 배율 — 시각 결과를 그대로 유지하기 위한 상수입니다.
 const ZOOM_SCALE = 2.2;
 
-function ZoomImage({ src, alt }: { src: string; alt: string }) {
+function ZoomImage({ src, alt, idx }: { src: string; alt: string; idx: number }) {
   const [isZoomed, setIsZoomed] = useState(false);
+  // 확대 레이어(1600px)는 처음엔 주소가 비어 있습니다 — md 이상에선 opacity 0으로 깔려 있어
+  // lazy여도 곧장 받아지는데, 사진 셋이면 1.7MB가 히어로와 대역폭을 다툽니다.
+  // 바탕 사진이 다 풀린 뒤 한가할 때(마우스 기기), 또는 처음 올라온 순간에 겁니다.
+  const [armed, setArmed] = useState(false);
+  const baseImgRef = useRef<HTMLImageElement | null>(null);
   // 사파리 프레임 드랍의 주범이 mousemove마다의 측정 + setState라서,
   // rect는 진입 시 1회만 재고 좌표는 ref에만 적은 뒤 rAF에서 transform으로 직접 그립니다.
   const zoomImgRef = useRef<HTMLImageElement | null>(null);
@@ -52,6 +57,8 @@ function ZoomImage({ src, alt }: { src: string; alt: string }) {
   };
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    // 한가해지기 전에 올라왔거나 터치 아이패드의 탭(흉내 mouseenter)이면 여기서 받기 시작합니다.
+    setArmed(true);
     setIsZoomed(true);
     rectRef.current = e.currentTarget.getBoundingClientRect();
     zoomHeightRef.current = zoomImgRef.current?.offsetHeight ?? 0;
@@ -94,6 +101,46 @@ function ZoomImage({ src, alt }: { src: string; alt: string }) {
     []
   );
 
+  // 확대 레이어 미리 걸기 — 마우스로 호버할 수 있는 기기에서만. (터치 기기는 첫 탭 때 handleMouseEnter가 겁니다)
+  // 바탕 사진에 onLoad를 달면 안 됩니다: React가 그 사진을 기다리지 않게 되어
+  // 썸네일→히어로 모프가 빈 칸 위에 내려앉습니다. 그래서 ref로 decode()를 기다립니다.
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    const img = baseImgRef.current;
+    if (!img) return;
+    let cancelled = false;
+    let cancelIdle: (() => void) | null = null;
+    const arm = () => {
+      if (!cancelled) setArmed(true);
+    };
+    (img.complete ? Promise.resolve() : img.decode())
+      .catch(() => {}) // 바탕 사진이 깨져도 확대는 시도합니다
+      .then(() => {
+        if (cancelled) return;
+        if (typeof window.requestIdleCallback === 'function') {
+          const id = window.requestIdleCallback(arm, { timeout: 2000 });
+          cancelIdle = () => window.cancelIdleCallback(id);
+        } else {
+          // 사파리에는 requestIdleCallback이 없습니다 — 페이지 전환(루트 180+760ms·모프 760ms)이 끝난 뒤로 미룹니다.
+          // 300ms면 모프 도중에 1600px 원본을 받아 풀게 됩니다. (그 전에 올라오면 handleMouseEnter가 바로 겁니다)
+          const id = window.setTimeout(arm, 1000);
+          cancelIdle = () => window.clearTimeout(id);
+        }
+      });
+    return () => {
+      cancelled = true;
+      cancelIdle?.();
+    };
+  }, []);
+
+  // 확대 사진이 호버 도중에 늦게 도착하면, 마우스가 멈춰 있어도 실제 높이로 다시 재서 한 번 그립니다.
+  // (paint()는 zoomHeightRef가 0인 동안 다시 잽니다. 이 레이어는 lazy라 onLoad를 달아도 모프를 붙잡지 않습니다)
+  const handleZoomLoad = () => {
+    if (!isZoomed) return; // 호버 밖이면 다음 진입 때 handleMouseEnter가 새로 잽니다
+    zoomHeightRef.current = 0;
+    schedule();
+  };
+
   return (
     <div
       className="relative aspect-[4/5] w-full overflow-hidden md:cursor-crosshair"
@@ -104,11 +151,14 @@ function ZoomImage({ src, alt }: { src: string; alt: string }) {
       {/* 사진은 블렌드 없이 불투명하게 — 공기·오로라·커서 빛이 제품색에 섞이지 않습니다.
           확대 중에도 이 사진은 그대로 깔려 있어, 확대 레이어가 페이드되는 동안
           두 장 사이로 배경이 비치는 순간이 없습니다. */}
+      {/* 크기 규칙(heroSources)은 홈 그리드의 미리 받기와 한 벌입니다 — 같은 주소를 골라야 캐시가 맞습니다.
+          첫 장만 high: 서버 렌더가 이 사진만 <head>에 preload하고(low는 건너뜀), 나머지 사진은
+          그대로 즉시 받되 히어로와 대역폭을 다투지 않습니다. (onLoad·loading=lazy 금지 — 위 설명) */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={sizedImage(src, 900)}
-        srcSet={sizedSrcSet(src, [640, 900, 1280])}
-        sizes="(max-width: 768px) 100vw, 620px"
+        ref={baseImgRef}
+        {...heroSources(src)}
+        fetchPriority={idx === 0 ? 'high' : 'low'}
         alt={alt}
         className="absolute inset-0 h-full w-full object-contain"
       />
@@ -116,10 +166,12 @@ function ZoomImage({ src, alt }: { src: string; alt: string }) {
       <img
         ref={zoomImgRef}
         // 확대 레이어만 원본 해상도를 씁니다 — 여기서는 화질이 곧 기능입니다.
-        src={sizedImage(src, 1600)}
+        // 주소는 armed 뒤에야 겁니다(위 useEffect). 그 전엔 src가 없어 아무것도 받지 않습니다.
+        src={armed ? sizedImage(src, 1600) : undefined}
         // 휴대폰에선 display:none(확대 없음) — lazy라야 1600px 원본을 받지 않습니다.
         // 받는 중이어도 아래 사진이 불투명하게 깔려 있어 빈칸이 비치지 않습니다.
         loading="lazy"
+        onLoad={handleZoomLoad}
         alt=""
         aria-hidden
         className={`pointer-events-none absolute left-0 top-0 hidden w-full origin-top-left transition-opacity duration-300 ease-silk will-change-transform md:block ${
@@ -200,7 +252,7 @@ export default function ProductClientView({ product, handle }: { product: any; h
               const frame = spec ? (
                 <ModelShot src={image.url} alt={`${product.title} — model`} spec={spec} />
               ) : (
-                <ZoomImage src={image.url} alt={`${product.title}-${idx}`} />
+                <ZoomImage src={image.url} alt={`${product.title}-${idx}`} idx={idx} />
               );
 
               return (

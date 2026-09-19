@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/subset-ko.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/subset-ko.mjs",
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint",
+    "fonts:ko": "node scripts/subset-ko.mjs",
     "ops:seed": "node --env-file=.env.local scripts/ops-seed.mjs",
     "ops:member": "node --env-file=.env.local scripts/ops-member.mjs",
     "ops:q": "node --env-file=.env.local scripts/ops-query.mjs",
@@ -29,6 +32,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.3.2",
     "postcss": "^8.5.15",
+    "subset-font": "^2.7.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^5"
   }

@@ -21,6 +21,11 @@ import { getWorld, onWorld } from '@/components/orb/world';
    · 그레인: 9fps로 깜빡이는 필름 그레인이 전체를 자연스럽게 묶습니다.
 
    WebGL이 없으면 캔버스가 투명하게 남고, 뒤의 정적 물감(.v4v-sky)이 대신합니다.
+   캔버스가 완전히 떠오르면 <html data-sky="gl">을 새겨 그 밑그림을 내립니다(globals.css).
+
+   · 그리기는 '바뀐 게 있을 때만': 스크롤·커서·세계 전환·크기 변화가 있는 프레임은
+     매번, 가만히 읽는 동안엔 그레인 박자(9fps)에만 그립니다. rAF는 매 프레임 돌아
+     첫 스크롤·첫 움직임은 지연 없이 그 프레임에 그려집니다.
    ----------------------------------------------------------- */
 
 /** 배경은 부드러운 그라디언트 — 픽셀 밀도를 낮춰도 눈에 띄지 않고 GPU만 가벼워집니다. */
@@ -45,6 +50,7 @@ uniform float uCursor;  // 커서 빛의 세기 0…1
 uniform vec2 uTrail[${TRAIL_N}];   // 혜성 알갱이 위치(버퍼 픽셀)
 uniform float uTrailR[${TRAIL_N}]; // 알갱이 반지름(짧은 변 기준 정규화)
 uniform float uTrailA[${TRAIL_N}]; // 알갱이 밝기
+uniform vec4 uTrailBox;  // 혜성이 닿는 사각형(버퍼 픽셀, 아래가 0) — xmin, ymin, xmax, ymax
 uniform float uGrainT;
 
 float hash(vec2 p) {
@@ -112,8 +118,12 @@ void main() {
   col = mix(col, P(vec3(0.725, 0.541, 0.306), vec3(0.427, 0.663, 0.545)), ev * 0.34);
 
   /* 커서의 빛 — 작은 알갱이들이 길을 따라 낱낱이 이어지는 혜성.
-     예전의 '속도 방향 stretch'는 빠른 움직임에서 경직된 캡슐로 보여 걷어냈습니다. */
-  if (uCursor > 0.003) {
+     예전의 '속도 방향 stretch'는 빠른 움직임에서 경직된 캡슐로 보여 걷어냈습니다.
+     빛은 화면의 몇 %뿐이라, CPU가 잰 사각형(uTrailBox) 밖 픽셀은 fbm·10번의 exp를 건너뜁니다.
+     사각형 여유는 최대 반지름 × 5(+2px) — em ≥ 0.8이라 경계에서도 d/r ≥ 4, exp(−16)로 결과가 같습니다. */
+  if (uCursor > 0.003 &&
+      gl_FragCoord.x > uTrailBox.x && gl_FragCoord.y > uTrailBox.y &&
+      gl_FragCoord.x < uTrailBox.z && gl_FragCoord.y < uTrailBox.w) {
     float em = 0.80 + 0.40 * fbm(p * 7.1 + t * 0.4);  // 가장자리를 물감처럼 흐트러뜨림
     float glow = 0.0;
     for (int i = 0; i < ${TRAIL_N}; i++) {
@@ -158,9 +168,31 @@ export default function AuroraField() {
     let disposed = false;
     let raf = 0;
     let lost = false;
+
+    /* 밑그림 내리기 — 불투명 캔버스가 다 떠오르면 .v4v-sky는 영영 보이지 않는데도
+       WebKit은 문서 높이만 한 음수 z 레이어로 칠해 두고(수십~백수십 MB), 세계 전환마다
+       다시 칠합니다. 그래서 캔버스 불투명도가 실제로 1이 된 뒤에만 <html data-sky="gl">을
+       새겨 CSS가 밑그림을 내리게 합니다(페이드 도중에 내리면 하늘이 비어 보입니다).
+       컨텍스트를 잃거나 캔버스가 빠지면(체크아웃·운영 화면) 곧바로 되돌립니다. */
+    const root = document.documentElement;
+    let skyTimer = 0;
+    const markSky = () => {
+      if (disposed || lost || root.getAttribute('data-sky') === 'gl') return;
+      if (getComputedStyle(canvas).opacity === '1') root.setAttribute('data-sky', 'gl');
+    };
+    const onFaded = (event: TransitionEvent) => {
+      if (event.propertyName === 'opacity') markSky();
+    };
+    const unmarkSky = () => {
+      window.clearTimeout(skyTimer);
+      canvas.removeEventListener('transitionend', onFaded);
+      root.removeAttribute('data-sky');
+    };
+
     const onLost = (event: Event) => {
       event.preventDefault();
       lost = true;
+      unmarkSky(); // 캔버스가 사라지기 전에 밑그림부터 돌려 둡니다
       canvas.style.opacity = '0';
     };
     canvas.addEventListener('webglcontextlost', onLost);
@@ -188,6 +220,17 @@ export default function AuroraField() {
     const trailPos = new Float32Array(TRAIL_N * 2);
     const trailR = new Float32Array(TRAIL_N);
     const trailA = new Float32Array(TRAIL_N);
+    // 혜성이 닿는 사각형 — 포인터가 없으면 빈 상자(1,1,0,0)라 셰이더가 빛을 통째로 건너뜁니다.
+    const trailBox = new Float32Array([1, 1, 0, 0]);
+
+    /* 마지막으로 '그린' 값들 — 이번 프레임이 이와 같으면 그리지 않습니다.
+       (그리지 않은 WebGL 캔버스는 마지막 프레임을 그대로 보여 줍니다) */
+    let dirty = true; // 버퍼를 새로 잡은 프레임은 비어 있으므로 반드시 그립니다
+    let drawnGrain = -1;
+    let drawnScroll = NaN;
+    let drawnWorld = NaN;
+    let drawnCursor = NaN;
+    const drawnTrail = new Float32Array(TRAIL_N * 2);
 
     const resize = () => {
       const cw = canvas.clientWidth || window.innerWidth;
@@ -199,7 +242,9 @@ export default function AuroraField() {
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
+        dirty = true; // 크기를 바꾸면 버퍼가 지워집니다 — 같은 프레임에 다시 그려야 검게 비치지 않습니다
       }
+      if (dpr !== s.dpr) dirty = true; // uScroll·커서 좌표가 dpr을 곱해 올라갑니다
       s.w = w;
       s.h = h;
       s.dpr = dpr;
@@ -246,6 +291,7 @@ export default function AuroraField() {
         trail: gl.getUniformLocation(program, 'uTrail[0]'),
         trailR: gl.getUniformLocation(program, 'uTrailR[0]'),
         trailA: gl.getUniformLocation(program, 'uTrailA[0]'),
+        trailBox: gl.getUniformLocation(program, 'uTrailBox'),
         grainT: gl.getUniformLocation(program, 'uGrainT'),
       };
 
@@ -261,12 +307,17 @@ export default function AuroraField() {
         gl.uniform2fv(u.trail, trailPos);
         gl.uniform1fv(u.trailR, trailR);
         gl.uniform1fv(u.trailA, trailA);
+        gl.uniform4fv(u.trailBox, trailBox);
         gl.uniform1f(u.grainT, Math.floor(timeSec * 9.0) * 17.0);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
         if (!s.shown) {
           // 첫 프레임이 준비된 뒤에야 보입니다 — 검은 백킹이 비치는 일이 없습니다.
           s.shown = true;
           canvas.style.opacity = '1';
+          // 800ms 페이드가 끝나면 밑그림을 내립니다. transitionend가 오지 않는 경우
+          // (HMR로 이미 1인 캔버스 등)는 900ms 타이머가, 늦어진 페이드는 transitionend가 맡습니다.
+          canvas.addEventListener('transitionend', onFaded);
+          skyTimer = window.setTimeout(markSky, 900);
         }
       };
 
@@ -331,6 +382,11 @@ export default function AuroraField() {
             trailY[i] += (trailY[i - 1] - trailY[i]) * kLink;
           }
           const tSec = now / 1000;
+          let rMax = 0;
+          let x0 = Infinity;
+          let y0 = Infinity;
+          let x1 = -Infinity;
+          let y1 = -Infinity;
           for (let i = 0; i < TRAIL_N; i++) {
             const f = i / (TRAIL_N - 1);
             trailPos[i * 2] = trailX[i];
@@ -339,11 +395,60 @@ export default function AuroraField() {
             // 정지 시 큰 원반이 되지 않도록 밝기 합을 낮게 잡습니다.
             trailR[i] = (0.028 - 0.017 * f) * (1 + 0.12 * Math.sin(tSec * 2.6 + i * 1.9));
             trailA[i] = i === 0 ? 0.85 : Math.pow(1 - f, 1.8) * 0.42;
+            if (trailR[i] > rMax) rMax = trailR[i];
+            if (trailX[i] < x0) x0 = trailX[i];
+            if (trailX[i] > x1) x1 = trailX[i];
+            if (trailY[i] < y0) y0 = trailY[i];
+            if (trailY[i] > y1) y1 = trailY[i];
           }
+          // 혜성 사각형 — 알갱이들의 외곽 + 최대 반지름(맥동 포함)의 5배. 셰이더의 em(≥0.8)이
+          // 거리를 줄여도 경계의 빛은 exp(−16)이라 잘린 테가 생기지 않습니다. em 식이나
+          // 배수를 바꾸면 이 여유도 함께 바꿔야 합니다.
+          const pad = 5 * rMax * Math.min(s.w, s.h) + 2;
+          trailBox[0] = x0 - pad;
+          trailBox[1] = y0 - pad;
+          trailBox[2] = x1 + pad;
+          trailBox[3] = y1 + pad;
+        } else {
+          trailBox[0] = 1;
+          trailBox[1] = 1;
+          trailBox[2] = 0;
+          trailBox[3] = 0;
         }
         s.cursor += (s.cursorTarget - s.cursor) * (1 - Math.exp(-dt / 0.35));
 
+        /* 바뀐 게 없으면 그리지 않습니다 — 가만히 읽는 동안엔 그레인 박자(9fps)에만.
+           그레인이 바뀌는 순간 ±10/255로 다시 뿌려지므로, 그 사이 시간(uTime)만으로 움직이는
+           물감 흐름·빛의 맥동(한 박자에 ≤1.5/255)은 계단으로 보이지 않습니다.
+           마지막으로 '그린' 값과 비교하므로 완화가 끝나는 마지막 값도 반드시 그려집니다. */
+        const grain = Math.floor((now / 1000) * 9);
+        let moved = false;
+        if (s.cursor > 0.003) {
+          for (let i = 0; i < TRAIL_N * 2; i++) {
+            if (Math.abs(trailPos[i] - drawnTrail[i]) > 0.25) {
+              moved = true;
+              break;
+            }
+          }
+        }
+        if (
+          !dirty &&
+          s.shown &&
+          !moved &&
+          grain === drawnGrain &&
+          s.scroll === drawnScroll &&
+          s.world === drawnWorld &&
+          Math.abs(s.cursor - drawnCursor) <= 0.002
+        ) {
+          return;
+        }
         draw(now / 1000);
+        dirty = false;
+        drawnGrain = grain;
+        drawnScroll = s.scroll;
+        drawnWorld = s.world;
+        drawnCursor = s.cursor;
+        drawnTrail.set(trailPos);
       };
       s.last = performance.now();
       raf = requestAnimationFrame(frame);
@@ -355,6 +460,8 @@ export default function AuroraField() {
       cleanupInput();
       offWorld();
       canvas.removeEventListener('webglcontextlost', onLost);
+      // 캔버스가 빠지면(체크아웃·운영 화면, 개발 모드의 두 번째 마운트 전) 밑그림을 먼저 돌려 둡니다.
+      unmarkSky();
       // 캔버스가 화면에서 완전히 빠진 뒤에만 컨텍스트를 반납합니다.
       // (개발 모드는 컴포넌트를 두 번 마운트하는데, 같은 캔버스의 getContext는
       //  같은 컨텍스트를 돌려주므로 여기서 바로 잃게 하면 두 번째 마운트가 죽습니다)

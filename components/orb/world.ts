@@ -4,7 +4,7 @@
    localStorage에서 읽어 새깁니다(app/layout.tsx). CSS는 이 속성만 봅니다.
    ----------------------------------------------------------- */
 
-import { ORB, RAIL_ORB, SKY, type WorldId } from '@/components/orb/assets';
+import { ORB, RAIL_ORB, type WorldId } from '@/components/orb/assets';
 
 export type { WorldId };
 
@@ -60,11 +60,13 @@ function prefetch(sources: readonly (string | undefined)[]) {
   }
 }
 
-/** 반대 세계의 가벼운 에셋(정지 사진·하늘)을 미리 받아 두면 첫 전환이 즉시 일어납니다. */
+/**
+ * 반대 세계의 가벼운 에셋(헤더 구체의 정지 사진)을 미리 받아 두면 첫 전환이 즉시 일어납니다.
+ * 하늘 그림(assets SKY, /world/*.webp)은 더 받지 않습니다 — 배경은 오로라 셰이더 캔버스가 그리고,
+ * 그 그림을 쓰는 곳이 이제 없어 받기만 하고 버려졌습니다.
+ */
 export function prefetchWorld(world: WorldId) {
-  const sky = SKY[world];
-  const portrait = window.matchMedia('(orientation: portrait)').matches;
-  prefetch([ORB[world].image[256], portrait ? sky.portrait : sky.landscape]);
+  prefetch([ORB[world].image[256]]);
 }
 
 /**
@@ -88,4 +90,18 @@ export function prefetchRail(world: WorldId) {
   if (railPrefetched.has(world) || !window.matchMedia(RAIL_QUERY).matches) return;
   railPrefetched.add(world);
   prefetch([railImageSrc(world)]);
+}
+
+/** 건너갈 기색 — 구체 루프(orbLoop)가 듣고 반대 세계의 GPU 겹을 미리 만듭니다. */
+export const WORLD_INTENT_EVENT = 'v4v:world-intent';
+
+/**
+ * 세계를 건너갈 기색(세계 스위치·Shop 메뉴의 세계 링크에 마우스/포커스)이 보이면
+ * 그림을 받아 두는 데서 그치지 않고, 레일·헤더 구체가 반대 세계의 겹(디코드·텍스처·셰이더)까지
+ * 미리 만들게 합니다. 누르는 순간엔 이미 준비돼 있어 녹아듦이 하늘과 같은 박자에 시작합니다.
+ * (레일의 2048² 텍스처는 여기서 띠로 나눠 올리므로 머뭇거리는 사이의 몇 프레임에 흩어집니다)
+ */
+export function warmWorld(world: WorldId) {
+  prefetchRail(world);
+  document.documentElement.dispatchEvent(new CustomEvent<WorldId>(WORLD_INTENT_EVENT, { detail: world }));
 }

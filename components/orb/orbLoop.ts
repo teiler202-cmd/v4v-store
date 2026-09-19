@@ -13,7 +13,7 @@ import { ORB, RAIL_ORB, orbTextures, type WorldId } from '@/components/orb/asset
 import { CONTEXT_ATTRIBUTES, createOrbLayer, restOf, type GL, type OrbLayer } from '@/components/orb/orbGl';
 import { createRailLayer } from '@/components/orb/railGl';
 import { spinAngle } from '@/components/orb/spin';
-import { getWorld, onWorld, railImageSrc } from '@/components/orb/world';
+import { WORLD_INTENT_EVENT, getWorld, onWorld, railImageSrc } from '@/components/orb/world';
 
 /** 세계가 녹아드는 동안의 프레임 간격 — 평상시보다 촘촘하게 */
 const FADE_FRAME_MS = 1000 / 30;
@@ -48,13 +48,15 @@ function createLayer(
   world: WorldId,
   img: HTMLImageElement | null,
   orbPx: number,
+  banded: boolean,
+  hurry: () => boolean,
 ) {
   if (kind === 'rail') {
     // 정지 사진(<img>)을 그대로 텍스처로 — 아직 받는 중이면 그 내려받기를 기다립니다(같은 2048 그림을 두 번 받지 않게,
     // 그리고 srcset이 고른 크기 그대로). 숨은 세계의 lazy 사진은 아직 시작도 안 했을 수 있어 지금 받게 합니다.
     if (img) {
       if (img.loading === 'lazy') img.loading = 'eager';
-      return createRailLayer(gl, RAIL_ORB[world], img);
+      return createRailLayer(gl, RAIL_ORB[world], img, { banded, hurry });
     }
     return createRailLayer(gl, RAIL_ORB[world], railImageSrc(world));
   }
@@ -120,11 +122,18 @@ export async function runOrb(
 
   const layers: Partial<Record<WorldId, OrbLayer | null>> = {};
   const pending: Partial<Record<WorldId, Promise<OrbLayer | null>>> = {};
+  /** 이미 건너간 세계 — 그 겹을 띠로 올리는 중이었다면 남은 띠를 서둘러 올립니다(railGl hurry). */
+  const hurried = new Set<WorldId>();
 
-  const ensureLayer = (world: WorldId) => {
+  /**
+   * @param banded 레일 텍스처를 띠로 나눠 올릴지 — 첫 표시·건너갈 기색(호버)처럼 서두를 것 없는 때는 나눠
+   *   프레임을 지키고, 누르는 순간에 처음 만드는 겹은 한 번에 올려 녹아듦이 하늘보다 늦게 시작하지 않게 합니다.
+   *   (띠는 4–5프레임이 걸려, 누른 뒤 만들면 레일만 100ms 남짓 늦게 따라왔습니다)
+   */
+  const ensureLayer = (world: WorldId, banded = true) => {
     if (layers[world] !== undefined) return Promise.resolve(layers[world] ?? null);
     if (!pending[world]) {
-      pending[world] = createLayer(gl, opts.layer, world, imgs[world], orbPx)
+      pending[world] = createLayer(gl, opts.layer, world, imgs[world], orbPx, banded, () => hurried.has(world))
         .then((layer) => {
           layers[world] = layer;
           wake(); // 반대 세계의 겹이 준비되면 잠든 루프(정지 모드)도 깨워 녹아듦을 시작합니다.
@@ -187,10 +196,20 @@ export async function runOrb(
 
   const offWorld = onWorld((world) => {
     target = world === 'eden' ? 1 : 0;
-    // 반대 세계의 겹은 첫 전환 때 만들어집니다 — 준비되는 대로 녹아들기 시작합니다.
-    void ensureLayer(world);
+    // 반대 세계의 겹은 보통 건너갈 기색(아래 onIntent)에 미리 만들어져 있습니다. 없으면 지금 한 번에 만들고,
+    // 기색에 띠로 올리던 중이면 남은 띠를 서둘러 — 준비되는 대로 녹아들기 시작합니다.
+    hurried.add(world);
+    void ensureLayer(world, false);
     wake();
   });
+
+  // 건너갈 기색(세계 스위치·세계 링크에 마우스/포커스, world.ts warmWorld) — 반대 세계의 겹을 미리 만듭니다.
+  // 녹아듦(target·mix)은 건드리지 않습니다: 실제 전환은 여전히 onWorld에서만 시작됩니다.
+  const onIntent = (event: Event) => {
+    const world = (event as CustomEvent<WorldId>).detail;
+    if (world === 'midbar' || world === 'eden') void ensureLayer(world);
+  };
+  document.documentElement.addEventListener(WORLD_INTENT_EVENT, onIntent);
 
   // 크기가 바뀌면(브레이크포인트·창 크기) 다음 프레임에 다시 잽니다.
   // 레일처럼 좁은 화면에서 통째로 숨는 캔버스는 루프가 잠들어 있다가, 다시 보이면 여기서 깨어납니다.
@@ -214,15 +233,33 @@ export async function runOrb(
    * 새 세계의 그림이 준비되기 전에 공기만 먼저 바뀌어, 옛 세계의 테가 새 세계 공기 속에 떠 보이지 않게.
    */
   const railBox = opts.layer === 'rail' ? (opts.box ?? null) : null;
+  // 섞임은 두 공기의 opacity에 직접 씁니다. 상자에 CSS 변수(--v4v-rail-mix)를 쓰던 때는 그 값이 상자 속
+  // 모든 자손(공기·미리보기·사진)으로 상속돼, 녹아드는 2초 남짓 동안 WebKit이 레일 층 전체를 매 프레임 다시 칠했습니다.
+  const halos = railBox
+    ? [
+        railBox.querySelector<HTMLElement>('.v4v-rail-halo.v4v-w-midbar'),
+        railBox.querySelector<HTMLElement>('.v4v-rail-halo.v4v-w-eden'),
+      ]
+    : null;
   let haloMix = -1;
+  let haloFading = false;
   const syncHalo = () => {
-    if (!railBox || mix === haloMix) return;
+    if (!railBox || !halos) return;
+    // 녹아드는 동안만 공기를 합성 레이어로 올립니다(.v4v-rail-fading → will-change, globals.css) —
+    // 늘 올려 두면 GPU 메모리만 차지합니다. 섞임이 목표에 닿는 마지막 걸음도 여기를 지나 클래스가 빠집니다.
+    const fading = mix !== target;
+    if (fading !== haloFading) {
+      haloFading = fading;
+      railBox.classList.toggle('v4v-rail-fading', fading);
+    }
+    if (mix === haloMix) return;
     haloMix = mix;
-    railBox.style.setProperty('--v4v-rail-mix', String(mix));
+    if (halos[0]) halos[0].style.opacity = String(1 - mix);
+    if (halos[1]) halos[1].style.opacity = String(mix);
   };
   const releaseHalo = () => {
-    railBox?.classList.remove('v4v-rail-gl');
-    railBox?.style.removeProperty('--v4v-rail-mix');
+    railBox?.classList.remove('v4v-rail-gl', 'v4v-rail-fading');
+    halos?.forEach((halo) => halo?.style.removeProperty('opacity'));
   };
 
   const stop = () => {
@@ -233,6 +270,7 @@ export async function runOrb(
     window.clearTimeout(fadeTimer);
     observer.disconnect();
     offWorld();
+    document.documentElement.removeEventListener(WORLD_INTENT_EVENT, onIntent);
     canvas.removeEventListener('webglcontextlost', onLost);
   };
   const onLost = (event: Event) => {
@@ -270,8 +308,11 @@ export async function runOrb(
       } else if (ready === null) {
         mix = target; // 그쪽 겹을 만들 수 없으면 그냥 넘어갑니다 (아래에서 있는 겹을 그림)
       }
-      if (shown) syncHalo();
     }
+    // 섞임 블록 밖에서 맞춥니다 — 첫 전환에서 겹이 준비되기 전에 되돌려 누르면 섞임이 움직이지 않은 채
+    // 목표와 같아져 위 블록을 건너뛰므로, 여기서 부르지 않으면 .v4v-rail-fading(will-change)이 남습니다.
+    // 바뀐 게 없으면 비교 두 번으로 끝납니다.
+    if (shown) syncHalo();
 
     if (resized) {
       resized = false;

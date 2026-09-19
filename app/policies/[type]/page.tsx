@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { shopifyFetch } from '@/lib/shopify-config';
-import { BRAND, BUSINESS, CONTACT } from '@/lib/brand';
+import { BRAND, BUSINESS, CONTACT, POLICY_LINKS } from '@/lib/brand';
 
 // 1. 쇼피파이 API를 호출해서 정책 데이터를 가져오는 함수
 // URL 경로를 쇼피파이 GraphQL API 키워드로 변환.
@@ -57,6 +57,17 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       <dd>{children}</dd>
     </>
   );
+}
+
+// 정책 페이지는 푸터(POLICY_LINKS)에 걸린 다섯 개가 전부라 빌드 때 모두 구워 둡니다.
+// 예전엔 요청마다 서버에서 그려서(no-store) 링크를 미리 받아 둘 수 없었고, 누를 때마다 서버 왕복을 기다렸습니다.
+// 목록은 손으로 적지 않고 POLICY_LINKS에서 뽑습니다 — 링크를 추가하면 페이지도 함께 구워집니다.
+// (contact는 쇼피파이를 부르지 않고 아래에서 직접 그립니다. 나머지 넷은 fetch의 3600초 주기로 다시 확인합니다)
+// 목록 밖의 주소는 서버에서 그리지 않고 곧바로 404입니다.
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return POLICY_LINKS.map(({ path }) => ({ type: path.split('/').pop()! }));
 }
 
 // 2. 화면에 그려주는 메인 컴포넌트

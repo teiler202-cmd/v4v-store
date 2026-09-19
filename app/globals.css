@@ -67,19 +67,17 @@ html[data-world='eden'] {
   --v4v-pool: 0.6;
 }
 
+/* 전역 scroll-behavior: smooth는 두지 않습니다 — Next 16은 페이지 이동 때 그것을 끄지 않아,
+   스크롤을 내린 채 메뉴를 누르면 새 페이지가 페이드 속에서 위로 훑어 올라갔습니다.
+   부드러운 스크롤이 필요한 곳은 JS가 behavior:'smooth'를 직접 넘깁니다(에세이 목차·상품 썸네일). */
 html {
   background-color: var(--v4v-air);
+  /* 셰이더 캔버스가 떠 있으면(data-sky="gl") 이 트윈은 꺼집니다 — 아래 '세계의 공기' 참고 */
   transition: background-color 2200ms var(--ease-silk);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   scroll-padding-top: 7rem;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
 }
 
 body {
@@ -323,17 +321,19 @@ html[data-intro="playing"] .v4v-chrome {
 .v4v-rail-halo.v4v-w-eden {
   --v4v-halo: 77 133 102;
 }
-/* WebGL이 넘겨받은 뒤(orbLoop가 .v4v-rail-gl을 붙임)엔 두 공기가 캔버스의 세계 섞임(--v4v-rail-mix)을
+/* WebGL이 넘겨받은 뒤(orbLoop가 .v4v-rail-gl을 붙임)엔 두 공기가 캔버스의 세계 섞임을
    그대로 따릅니다 — 새 세계의 구 그림이 아직 오는 중이어도 공기만 먼저 바뀌지 않습니다.
+   섞임은 orbLoop가 두 공기의 인라인 opacity로 직접 씁니다(세계 게이트의 opacity보다 우선).
+   예전처럼 상자에 변수(--v4v-rail-mix)를 쓰면 상자 밑 모든 요소가 매 프레임 다시 계산·칠해졌습니다.
+   게이트의 1100ms 트랜지션이 매 프레임의 값을 다시 트윈하지 않도록 트랜지션은 끕니다
    (세계 게이트 html.v4v-worlds-live[data-world] … 보다 구체적이어야 해서 상자 클래스를 둘 겹칩니다) */
 .v4v-rail-box.v4v-rail-gl .v4v-rail-halo {
   transition: none;
 }
-.v4v-rail-box.v4v-rail-gl .v4v-rail-halo.v4v-w-midbar {
-  opacity: calc(1 - var(--v4v-rail-mix, 0));
-}
-.v4v-rail-box.v4v-rail-gl .v4v-rail-halo.v4v-w-eden {
-  opacity: var(--v4v-rail-mix, 0);
+/* 섞는 동안(.v4v-rail-fading)만 공기를 제 레이어로 올려 opacity 변화가 합성만으로 끝나게 합니다 —
+   늘 올려 두면 겹치는 LQIP 층까지 레이어로 붙들려 메모리만 듭니다. */
+.v4v-rail-box.v4v-rail-fading .v4v-rail-halo {
+  will-change: opacity;
 }
 
 /* 메뉴는 구체의 적도(화면 가운데)에 세로로 — 레일 폭의 16% 들어간 자리에서 시작합니다. */
@@ -443,7 +443,7 @@ html.v4v-worlds-live:not([data-world="eden"]) .v4v-w-eden {
    물감·커서의 빛·필름 그레인이 GPU 한 번의 패스에 담겨, DOM 레이어 없이
    어떤 스크롤·전환에서도 프레임이 떨어지지 않습니다.
    .v4v-sky 는 그 밑그림: WebGL이 없거나 캔버스가 첫 프레임을 만들기 전의
-   정적 물감(가장자리 edges + 발치 foot)입니다. 애니메이션이 없어 비용도 없습니다. */
+   정적 물감(가장자리 edges + 발치 foot)입니다. 캔버스가 다 떠오르면 내려갑니다(아래 data-sky). */
 .v4v-aurora-field {
   position: fixed;
   inset: 0;
@@ -493,6 +493,21 @@ html.v4v-worlds-live:not([data-world="eden"]) .v4v-w-eden {
 /* 하늘의 크로스페이드는 구체보다 한 호흡 느리게 — 땅이 바뀌는 시간입니다 */
 html.v4v-worlds-live .v4v-sky-layer {
   transition-duration: 2200ms;
+}
+
+/* 불투명 셰이더 캔버스가 완전히 떠오른 뒤(AuroraField가 <html data-sky="gl">을 새김)엔
+   밑그림이 영영 보이지 않습니다. 그런데도 WebKit은 문서 높이만 한 음수 z 레이어로 칠해 들고
+   (수십~백수십 MB), 스크롤·세계 전환마다 다시 칠합니다 — 그래서 아예 내립니다.
+   visibility가 아니라 display:none이어야 그 레이어가 풀립니다. WebGL이 없거나 컨텍스트를
+   잃으면 표식이 없으니 밑그림이 그대로 배경을 맡습니다. */
+html[data-sky='gl'] .v4v-sky {
+  display: none;
+}
+/* 같은 이유로 html 바탕색의 2200ms 트윈도 끕니다 — 캔버스 밑이라 안 보이는데 매 프레임
+   화면 전체를 다시 칠했습니다. 색은 새 세계로 즉시 바뀌어 오버스크롤·폴백은 맞게 남습니다.
+   배경은 계속 html이 칠합니다(body로 옮기지 않습니다). */
+html[data-sky='gl'] {
+  transition: none;
 }
 
 /* ---------- 세계가 바뀌는 순간 ----------

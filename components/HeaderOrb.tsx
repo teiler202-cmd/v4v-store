@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CS
 import { createPortal } from 'react-dom';
 import { ORB, type WorldId } from '@/components/orb/assets';
 import { SPIN_PERIOD, whenIdle } from '@/components/orb/spin';
-import { getWorld, onWorld, otherWorld, prefetchRail, prefetchWorld, setWorld } from '@/components/orb/world';
+import { getWorld, onWorld, otherWorld, prefetchWorld, setWorld, warmWorld } from '@/components/orb/world';
 
 const WORLD_NAME: Record<WorldId, string> = { midbar: 'MIDBAR', eden: 'EDEN' };
 
@@ -34,8 +34,8 @@ export default function HeaderOrb({ className = '' }: { className?: string }) {
     setWorld(otherWorld(getWorld()));
   }, []);
 
-  // 건너갈 기색이 보이면 레일의 큰 구체가 쓸 반대 세계 에셋을 미리 받습니다.
-  const warm = useCallback(() => prefetchRail(otherWorld(getWorld())), []);
+  // 건너갈 기색이 보이면 반대 세계 에셋을 받고 구체의 GPU 겹까지 미리 만들어 둡니다(world.ts warmWorld).
+  const warm = useCallback(() => warmWorld(otherWorld(getWorld())), []);
 
   // 빛 스윕은 전환 이벤트에 반응합니다 — 이 구체가 아니라 Shop 메뉴에서 건너가도 번집니다.
   useEffect(

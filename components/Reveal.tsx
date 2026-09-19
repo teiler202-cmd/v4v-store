@@ -3,8 +3,10 @@
 import { ReactNode } from 'react';
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useSpring, type Variants } from 'framer-motion';
+import { SILK } from '@/lib/ease';
 
-export const SILK = [0.16, 1, 0.3, 1] as const;
+// SILK의 본적은 lib/ease.ts입니다. 여기서 가져다 쓰던 페이지들을 위해 그대로 다시 내보냅니다.
+export { SILK };
 export const QUINT = [0.22, 1, 0.36, 1] as const;
 
 type RevealProps = {
@@ -21,6 +23,8 @@ type RevealProps = {
 /**
  * 스크롤에 맞춰 자식들을 한 호흡씩 늦춰 띄우는 컨테이너.
  * 개별 자식은 <RevealItem> 또는 <MaskUp>으로 감싸주세요.
+ * 주의: 지금은 자식이 transition에 delay(기본 0)를 늘 실어 보내 framer가 stagger·delay를 덮어씁니다
+ * — 실제로는 한꺼번에 뜹니다. 계단식으로 되살리면 눈에 띄게 달라지니 디자인 결정으로 남겨 둡니다.
  */
 export function Reveal({
   children,
@@ -85,18 +89,35 @@ export function RevealItem({
 }: ItemProps) {
   const reduced = useReducedMotion();
 
+  // y 대신 transform 문자열로 움직입니다 — framer는 transform 계열 중 'transform' 키만
+  // WAAPI(합성 스레드)로 넘기고, y 같은 개별 축 값은 매 프레임 JS로 씁니다. 그러면 사파리에서
+  // 스크롤·이미지 디코드로 메인 스레드가 막힐 때 글이 떠오르다 멈칫합니다. 끝나면 transitionEnd로
+  // transform을 'none'으로 되돌려 예전(y: 0 → none)처럼 쌓임 맥락·fixed 기준 상자를 남기지 않습니다.
+  // 같은 요소에 y와 transform을 함께 주면 서로 덮어쓰니 섞지 마세요.
+  //
+  // 동작 줄이기(reduced)에도 transform(·filter)을 'none'으로 적어 둡니다. useReducedMotion은
+  // 서버에서 null, 클라이언트 첫 렌더에서 true라 SSR은 아래 기본 hidden(translateY·blur)을 style에
+  // 박아 보냅니다. React는 수화 때 style 불일치를 고치지 않고 framer도 자기 값에 없는 속성은
+  // 건드리지 않아, 글이 어긋난 채 남았습니다. 값으로 두면 마운트 직후 framer가 덮어쓰고,
+  // visible의 'none'→'none'은 애니메이션 없이 건너뜁니다. (visible에만 두면 행렬→none 보간이 되니 금지)
+  const still = { transform: 'none', ...(blur > 0 ? { filter: 'none' } : {}) };
   const variants: Variants = reduced
     ? {
-        hidden: { opacity: 0 },
-        visible: { opacity, transition: { duration: 0.3 } },
+        hidden: { opacity: 0, ...still },
+        visible: { opacity, ...still, transition: { duration: 0.3 } },
       }
     : {
-        hidden: { opacity: 0, y, ...(blur > 0 ? { filter: `blur(${blur}px)` } : {}) },
+        hidden: {
+          opacity: 0,
+          transform: `translateY(${y}px)`,
+          ...(blur > 0 ? { filter: `blur(${blur}px)` } : {}),
+        },
         visible: {
           opacity,
-          y: 0,
+          transform: 'translateY(0px)',
           ...(blur > 0 ? { filter: 'blur(0px)' } : {}),
           transition: { duration, ease: SILK, delay },
+          transitionEnd: { transform: 'none' },
         },
       };
 
@@ -137,13 +158,20 @@ export function MaskUp({
   const reduced = useReducedMotion();
 
   const variants: Variants = reduced
-    ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
+    ? {
+        // RevealItem과 같은 이유로 'none'을 명시 — 없으면 SSR의 translateY(106%)가 남아
+        // 동작 줄이기 사용자에게 제목이 마스크 아래 숨은 채 보이지 않습니다.
+        hidden: { opacity: 0, transform: 'none' },
+        visible: { opacity: 1, transform: 'none', transition: { duration: 0.3 } },
+      }
     : {
-        hidden: { y: '106%', opacity: 0 },
+        // RevealItem과 같은 이유로 transform 문자열 + 끝나면 'none' (퍼센트 단위는 그대로)
+        hidden: { transform: 'translateY(106%)', opacity: 0 },
         visible: {
-          y: '0%',
+          transform: 'translateY(0%)',
           opacity: 1,
           transition: { duration, ease: SILK, delay },
+          transitionEnd: { transform: 'none' },
         },
       };
 
@@ -259,9 +287,12 @@ export function ThreadLine({ className = '' }: { className?: string }) {
       aria-hidden
       className={`pointer-events-none absolute bottom-0 top-0 w-px overflow-hidden ${className}`}
     >
+      {/* will-change-transform: 스크롤마다 scaleY가 바뀌는데, 승격 안 된 요소의 2D transform 변경을
+          웹킷은 레이아웃+본문 리페인트로 처리합니다. 2px 폭 레이어라 비용은 사실상 0.
+          reduced 여부로 가르지 않습니다 — SSR과 첫 렌더에서 값이 달라 className 수화 불일치가 납니다. */}
       <motion.span
         style={reduced ? { scaleY: 1 } : { scaleY }}
-        className="block h-full w-full origin-top bg-ink/15"
+        className="block h-full w-full origin-top bg-ink/15 will-change-transform"
       />
     </span>
   );

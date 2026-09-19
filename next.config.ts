@@ -109,9 +109,17 @@ const nextConfig: NextConfig = {
     return [
       { source: '/:path*', headers: securityHeaders },
       {
-        // 해시가 붙은 빌드 산출물은 내용이 바뀌면 이름도 바뀝니다 — 영구 캐시해도 안전합니다.
-        source: '/archives/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        /**
+         * 아카이브 필름(szn1.mp4)과 포스터(public/archives/) — 이 미디어 파일만 일주일 캐시합니다.
+         *
+         * ⚠️ 확장자로 좁혀 둔 이유: 예전 규칙 ':path*'는 /archives 페이지 자체(HTML과 페이지 데이터)까지 잡아서,
+         *    한 번 연 브라우저가 1년 동안 다시 묻지도 않고 옛 페이지를 꺼냈습니다 — 배포 뒤에는 사라진 옛 JS·CSS를 가리켜
+         *    스타일이 빠진 채 뜹니다. 확장자가 붙은 파일 한 칸만 잡으니 /archives 와 앞으로 생길 하위 페이지(/archives/xxx)는
+         *    걸리지 않고 Next 의 기본 캐시를 따릅니다.
+         *    이 파일들은 이름에 내용 해시가 없어 immutable 을 붙이지 않습니다. 내용을 바꿀 때는 파일 이름도 바꾸는 편이 확실합니다.
+         */
+        source: '/archives/:file([^/]+\\.(?:mp4|webm|jpe?g|png|webp|avif))',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800' }],
       },
       {
         // 구체 로고 에셋도 파일 이름에 내용 해시가 붙어 있습니다 (components/orb/assets.ts).
