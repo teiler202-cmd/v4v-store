@@ -136,7 +136,7 @@ function SectionTitle({ lines, index }: { lines: [string, string]; index: number
   return (
     <div ref={ref} className="md:col-span-5">
       <div className="md:sticky md:top-36">
-        <RevealItem standalone y={10} blur={4} duration={1} className="mb-4 md:mb-5">
+        <RevealItem standalone y={10} duration={1} className="mb-4 md:mb-5">
           <span className="font-mono text-[9px] uppercase tracking-[0.34em] text-ash">
             {NUMERALS[index] ?? index + 1}
           </span>
@@ -165,7 +165,7 @@ function SectionTitle({ lines, index }: { lines: [string, string]; index: number
 
 export default function AboutPage() {
   return (
-    <div className="flex w-full select-none flex-col items-center bg-paper text-ink">
+    <div className="flex w-full select-none flex-col items-center text-ink">
       <ScrollProgress />
 
       {/* ---------- 표제 ---------- */}
@@ -175,7 +175,7 @@ export default function AboutPage() {
             ( Vision for Visionary )
           </MaskUp>
         </h1>
-        <RevealItem standalone delay={0.28} y={16} blur={5}>
+        <RevealItem standalone delay={0.28} y={16}>
           <p className="mt-4 font-mono text-[8.5px] uppercase tracking-[0.26em] text-ash md:mt-5 md:text-[10px]">
             Vision in Motion, Performance in Action.
           </p>
@@ -225,7 +225,7 @@ export default function AboutPage() {
                             {block.heading}
                           </MaskUp>
                         )}
-                        <RevealItem y={22} blur={6} duration={1.4}>
+                        <RevealItem y={22} duration={1.4}>
                           <p className={t.body}>{block.body}</p>
                         </RevealItem>
                       </div>

@@ -34,7 +34,7 @@ const CHANNELS = [
 
 export default function ContactPage() {
   return (
-    <div className="flex w-full select-none flex-col items-center bg-paper text-ink">
+    <div className="flex w-full select-none flex-col items-center text-ink">
       {/* 최상단 타이틀 영역 */}
       <header className="mb-16 mt-20 flex w-full flex-col items-center px-6 text-center md:mb-24 md:mt-28">
         <h1 className="font-grotesk text-[16px] font-bold uppercase tracking-[0.2em] text-ink md:text-[24px] md:tracking-[0.18em]">
@@ -42,7 +42,7 @@ export default function ContactPage() {
             ( Contact )
           </MaskUp>
         </h1>
-        <RevealItem standalone delay={0.26} y={16} blur={5}>
+        <RevealItem standalone delay={0.26} y={16}>
           <p className="mt-4 font-mono text-[8.5px] uppercase tracking-[0.26em] text-ash md:mt-5 md:text-[10px]">
             Reach out to Visionary
           </p>

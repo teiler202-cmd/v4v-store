@@ -3,6 +3,7 @@ import { sql } from './db';
 import { TABLES, type TableName, tableOf } from './schema';
 import { plusDays, todayKST } from './signals';
 import { buildCascade, type Cascade, type GoalRow, type TaskRow, type VisionRow } from './cascade';
+import type { FieldExp, FocusBoard, FocusSlot, PoolTask } from './focus';
 
 /**
  * 읽기.
@@ -270,5 +271,71 @@ export async function briefing(): Promise<Briefing> {
     products: { late: r.p_late, soon: r.p_soon },
     partners: { cold: r.pa_cold },
     money: { spentThisMonth: r.m_spent, wasteThisMonth: r.m_waste },
+  };
+}
+
+/* ── 집중 ───────────────────────────────────────────────────────────────── */
+
+/**
+ * 지금 누가 무엇을 쥐고 있는가 — 그리고 그동안 무엇을 끝냈는가.
+ *
+ * cascadeBoard 와 같은 방식입니다: 네 가지를 따로 묻지 않고 json_agg 로 한 줄에 담아
+ * **왕복 한 번, 접속 하나**로 받습니다. 이 화면은 몇십 초마다 스스로 새로 고치기
+ * 때문에(Live.tsx), 여기서 질의를 늘리면 그 배수로 늘어납니다.
+ *
+ * 경험치는 컬럼이 아닙니다. '끝낸 할 일'을 분야별로 센 수(done)만 가져오고,
+ * 경험치와 레벨은 signals.ts 가 화면에서 계산합니다 — 계산되는 값을 저장하지 않는
+ * 이 보드의 규칙 그대로입니다.
+ */
+export async function focusBoard(): Promise<FocusBoard> {
+  const today = todayKST();
+
+  const [row] = await sql<{
+    members: { id: string; name: string }[];
+    slots: FocusSlot[];
+    stats: FieldExp[];
+    pool: PoolTask[];
+  }[]>`
+    select
+      (select coalesce(json_agg(m order by m.created_at), '[]'::json) from (
+        select id, name, created_at from members
+      ) m) as members,
+
+      (select coalesce(json_agg(s order by s.picked_at), '[]'::json) from (
+        select f.member_id, f.task_id, f.picked_at,
+               t.title, t.status, t.due, t.field, t.priority,
+               t.goal_id, g.title as goal_title
+        from focus f
+        join tasks t on t.id = f.task_id
+        join goals g on g.id = t.goal_id
+      ) s) as slots,
+
+      -- 담당이 없는 채로 끝난 할 일은 누구의 경험치도 아닙니다. 그대로 둡니다 —
+      -- 주인 없는 성과를 아무에게나 붙이는 것이 숫자를 더 나쁘게 만듭니다.
+      (select coalesce(json_agg(e), '[]'::json) from (
+        select owner_id as member_id, field,
+               count(*)::int                                as done,
+               count(*) filter (where done_on = ${today})::int as today
+        from tasks
+        where status = '완료' and owner_id is not null
+        group by owner_id, field
+      ) e) as stats,
+
+      (select coalesce(json_agg(p order by p.due asc nulls last, p.title), '[]'::json) from (
+        select t.id, t.title, t.field, t.due, t.priority, g.title as goal_title
+        from tasks t
+        join goals g on g.id = t.goal_id
+        left join focus x on x.task_id = t.id
+        where t.status <> '완료' and x.task_id is null
+        order by t.due asc nulls last
+        limit 80
+      ) p) as pool
+  `;
+
+  return {
+    members: row.members ?? [],
+    slots: row.slots ?? [],
+    stats: row.stats ?? [],
+    pool: row.pool ?? [],
   };
 }

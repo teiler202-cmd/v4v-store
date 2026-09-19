@@ -113,6 +113,16 @@ const nextConfig: NextConfig = {
         source: '/archives/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
+      {
+        // 구체 로고 에셋도 파일 이름에 내용 해시가 붙어 있습니다 (components/orb/assets.ts).
+        source: '/orb/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        // 세계의 하늘(배경)도 같은 방식의 해시 이름입니다.
+        source: '/world/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
     ];
   },
 };

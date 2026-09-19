@@ -21,15 +21,17 @@ export default function ModelShot({
 
   return (
     <div
-      className="relative aspect-[4/5] w-full overflow-hidden bg-paper"
+      className="relative aspect-[4/5] w-full overflow-hidden"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* 블렌드 없이 불투명하게 — 공기색이 옷 색에 곱해지지 않습니다.
+          (누끼 컷이 투명 PNG면 그 투명 영역으로만 공기가 비칩니다) */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}
-        className="absolute inset-0 h-full w-full object-contain transition-transform duration-[1400ms] ease-silk"
+        className="absolute inset-0 h-full w-full object-contain"
       />
 
       <div

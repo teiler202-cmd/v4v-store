@@ -42,7 +42,7 @@ export default async function LoginPage({
   const destination = safeNext(next);
 
   return (
-    <div className="flex min-h-[70vh] w-full flex-col items-center bg-paper px-6 pb-32 pt-20 text-ink md:pt-28">
+    <div className="flex min-h-[70vh] w-full flex-col items-center px-6 pb-32 pt-20 text-ink md:pt-28">
       <header className="mb-14 flex flex-col items-center text-center md:mb-16">
         <h1 className="font-grotesk text-[16px] font-bold uppercase tracking-[0.2em] text-ink md:text-[22px] md:tracking-[0.18em]">
           ( Account )

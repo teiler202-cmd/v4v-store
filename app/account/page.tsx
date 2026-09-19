@@ -14,7 +14,7 @@ export default async function AccountPage() {
   // 로그아웃시키지 않고, 다시 시도할 수 있게만 안내합니다.
   if (session.status === 'error') {
     return (
-      <div className="flex min-h-[70vh] w-full flex-col items-center justify-center gap-6 bg-paper px-6 text-center text-ink">
+      <div className="flex min-h-[70vh] w-full flex-col items-center justify-center gap-6 px-6 text-center text-ink">
         <p className="font-mono text-[9px] uppercase tracking-[0.26em] text-ash">
           Temporarily unavailable
         </p>
@@ -35,7 +35,7 @@ export default async function AccountPage() {
   if (session.status !== 'ok') redirect('/account/login?next=%2Faccount');
 
   return (
-    <div className="min-h-[70vh] w-full bg-paper text-ink">
+    <div className="min-h-[70vh] w-full text-ink">
       <AccountDashboard customer={session.customer} />
     </div>
   );

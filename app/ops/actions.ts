@@ -6,6 +6,7 @@ import { sql } from '@/lib/ops/db';
 import { endSession, findMemberByLogin, requireMember, startSession } from '@/lib/ops/auth';
 import { rateLimit, tooManyMessage } from '@/lib/rateLimit';
 import { TABLES, tableOf, type Field } from '@/lib/ops/schema';
+import { todayKST } from '@/lib/ops/signals';
 import { removeObject } from '@/lib/ops/storage';
 
 /**
@@ -147,18 +148,80 @@ function dbMessage(error: unknown): string {
   return '저장하지 못했습니다.';
 }
 
-/** 할 일 상태만 빠르게 바꾸기 — 보드에서 체크 한 번으로 */
+/**
+ * 할 일 상태만 빠르게 바꾸기 — 보드에서 체크 한 번으로.
+ *
+ * 완료로 바꿀 때 세 가지가 함께 일어납니다.
+ *   1) 완료일(done_on)을 오늘로 — 분야별 경험치를 '오늘 얻은 것'까지 셀 수 있게.
+ *   2) 담당이 비어 있으면 끝낸 사람으로. 주인 없는 성과는 누구의 경험치도 되지 않습니다.
+ *      이미 담당이 있으면 건드리지 않습니다 — 담당은 사람이 정하는 칸입니다.
+ *   3) 쥐고 있던 칸(focus)에서 내려놓습니다. 끝난 일이 손에 남아 있으면
+ *      '지금 무엇을 잡고 있는가'가 거짓말이 됩니다.
+ *
+ * 되돌릴 때는 완료일을 지웁니다. 칸은 자동으로 다시 채우지 않습니다 —
+ * 그건 사람이 고를 일입니다.
+ *
+ * 네 가지를 한 문장(CTE)으로 보냅니다. 왕복이 늘면 이 화면이 잡는 접속도 늘어납니다.
+ */
 export async function setTaskStatus(id: string, status: string): Promise<SaveResult> {
-  await requireMember();
+  const member = await requireMember();
   const allowed = TABLES.tasks.fields.find((f) => f.key === 'status')?.options ?? [];
   if (!allowed.includes(status)) return { ok: false, message: '모르는 상태입니다.' };
 
+  const done = status === '완료';
+  const today = todayKST();
+
   const rows = await sql<{ id: string }[]>`
-    update tasks set status = ${status} where id = ${id} returning id
+    with letgo as (
+      delete from focus where task_id = ${id} and ${done}::boolean returning task_id
+    )
+    update tasks set
+      status   = ${status},
+      done_on  = case when ${done}::boolean then ${today}::date else null end,
+      owner_id = case when ${done}::boolean then coalesce(owner_id, ${member.id}::uuid) else owner_id end
+    where id = ${id}
+    returning id
   `;
   if (!rows[0]) return { ok: false, message: '그 할 일을 찾지 못했습니다.' };
   revalidatePath('/ops', 'layout');
   return { ok: true, id: rows[0].id };
+}
+
+/**
+ * 끝난 것으로 표시하기 — 흐름 화면에서 옆으로 밀어 끝낼 때.
+ *
+ * 표마다 '끝났다'는 말이 다릅니다. 할 일과 목표는 '완료', 비전은 '달성' 입니다.
+ * 화면이 그걸 외우지 않게 여기서 정합니다.
+ *
+ * 지우지 않고 상태만 바꾼다는 규칙 그대로입니다 — 끝난 행은 남습니다.
+ */
+export async function markDone(table: string, id: string): Promise<SaveResult> {
+  await requireMember();
+  if (table === 'tasks') return setTaskStatus(id, '완료');
+
+  const today = todayKST();
+
+  if (table === 'goals') {
+    // 이미 완료일이 있으면 덮어쓰지 않습니다 (되돌렸다 다시 끝낸 경우, 처음 끝낸 날이 맞습니다).
+    const rows = await sql<{ id: string }[]>`
+      update goals set status = '완료', done_on = coalesce(done_on, ${today}::date)
+      where id = ${id} returning id
+    `;
+    if (!rows[0]) return { ok: false, message: '그 목표를 찾지 못했습니다.' };
+    revalidatePath('/ops', 'layout');
+    return { ok: true, id: rows[0].id };
+  }
+
+  if (table === 'visions') {
+    const rows = await sql<{ id: string }[]>`
+      update visions set status = '달성' where id = ${id} returning id
+    `;
+    if (!rows[0]) return { ok: false, message: '그 비전을 찾지 못했습니다.' };
+    revalidatePath('/ops', 'layout');
+    return { ok: true, id: rows[0].id };
+  }
+
+  return { ok: false, message: '여기서는 끝낼 수 없습니다.' };
 }
 
 /**
@@ -210,6 +273,62 @@ export async function deleteFile(id: string): Promise<SaveResult> {
   await removeObject(file.storage_path);
   revalidatePath('/ops', 'layout');
   return { ok: true, id };
+}
+
+/* ── 집중 ───────────────────────────────────────────────────────────────── */
+
+/**
+ * 할 일 하나를 손에 쥡니다.
+ *
+ * 쥐면 상대 화면에도 바로 보입니다 — 그게 이 표가 있는 이유입니다.
+ * 한 할 일은 한 사람만 쥡니다(focus_task_uniq). 둘이 같은 것을 쥐면
+ * '지금 누가 무엇을'이라는 질문에 답이 둘이 되고, 그건 답이 없는 것과 같습니다.
+ *
+ * 담당이 비어 있으면 쥐는 사람으로 채웁니다. 이미 담당이 있으면 그대로 둡니다 —
+ * 남의 일을 대신 잡아 주는 경우가 있고, 그때 담당까지 뺏을 이유는 없습니다.
+ */
+export async function pickFocus(taskId: string): Promise<SaveResult> {
+  const member = await requireMember();
+
+  const [task] = await sql<{ id: string; status: string }[]>`
+    select id, status from tasks where id = ${taskId} limit 1
+  `;
+  if (!task) return { ok: false, message: '그 할 일을 찾지 못했습니다.' };
+  if (task.status === '완료') return { ok: false, message: '이미 끝난 할 일입니다.' };
+
+  try {
+    await sql`
+      with pick as (
+        insert into focus (member_id, task_id) values (${member.id}, ${taskId})
+        on conflict (member_id, task_id) do nothing
+        returning task_id
+      )
+      update tasks set owner_id = ${member.id}
+      where id = ${taskId} and owner_id is null
+    `;
+  } catch (error) {
+    // focus_task_uniq — 다른 사람이 먼저 쥔 것입니다.
+    if ((error as { code?: string })?.code === '23505') {
+      return { ok: false, message: '다른 사람이 이미 쥐고 있습니다.' };
+    }
+    return { ok: false, message: dbMessage(error) };
+  }
+
+  revalidatePath('/ops', 'layout');
+  return { ok: true, id: taskId };
+}
+
+/**
+ * 쥐고 있던 것을 내려놓습니다 (끝낸 것이 아니라 손을 뗀 것입니다).
+ *
+ * 자기 칸만 건드립니다 — member_id 를 조건에 넣는 것이 그 장치입니다.
+ * 할 일 자체는 그대로 남습니다. 상태도 바꾸지 않습니다.
+ */
+export async function dropFocus(taskId: string): Promise<SaveResult> {
+  const member = await requireMember();
+  await sql`delete from focus where member_id = ${member.id} and task_id = ${taskId}`;
+  revalidatePath('/ops', 'layout');
+  return { ok: true, id: taskId };
 }
 
 /* ── 메모 ───────────────────────────────────────────────────────────────── */

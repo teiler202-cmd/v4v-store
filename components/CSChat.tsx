@@ -38,6 +38,11 @@ export default function CSChat() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // 청크마다 setState 하면 글자 하나에 패널 전체가 다시 그려집니다.
+  // 수신 텍스트는 여기 모아 두고, 화면 반영은 프레임당 한 번으로 제한합니다.
+  const answerRef = useRef('');
+  const rafRef = useRef<number | null>(null);
+
   // 새 글자가 도착할 때마다 맨 아래를 따라갑니다.
   useEffect(() => {
     const el = scrollRef.current;
@@ -58,8 +63,14 @@ export default function CSChat() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  // 화면을 떠날 때 진행 중인 요청을 끊습니다.
-  useEffect(() => () => abortRef.current?.abort(), []);
+  // 화면을 떠날 때 진행 중인 요청을 끊고, 예약된 프레임도 함께 정리합니다.
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    },
+    []
+  );
 
   const send = useCallback(
     async (text: string) => {
@@ -98,18 +109,29 @@ export default function CSChat() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let answer = '';
+        answerRef.current = '';
+
+        const flush = () => {
+          rafRef.current = null;
+          const content = answerRef.current;
+          setMessages((prev) => {
+            const next = [...prev];
+            next[next.length - 1] = { role: 'assistant', content };
+            return next;
+          });
+        };
 
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
-          answer += decoder.decode(value, { stream: true });
-          setMessages((prev) => {
-            const next = [...prev];
-            next[next.length - 1] = { role: 'assistant', content: answer };
-            return next;
-          });
+          answerRef.current += decoder.decode(value, { stream: true });
+          // 이미 예약된 프레임이 있으면 거기에 얹습니다 — 프레임당 최대 1회.
+          if (rafRef.current === null) rafRef.current = requestAnimationFrame(flush);
         }
+
+        // 마지막 청크가 프레임을 기다리다 사라지지 않도록, 끝나면 즉시 반영합니다.
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+        flush();
       } catch (error) {
         if ((error as Error)?.name === 'AbortError') return;
         setMessages((prev) => {
@@ -121,6 +143,11 @@ export default function CSChat() {
           return next;
         });
       } finally {
+        // 중단·에러 시 남은 프레임이 안내 문구를 덮어쓰지 않게 여기서 취소합니다.
+        if (rafRef.current !== null) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
         setBusy(false);
         abortRef.current = null;
       }
@@ -134,12 +161,12 @@ export default function CSChat() {
         {open && (
           <motion.section
             key="panel"
-            initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.55, ease: SILK }}
             aria-label="고객 상담"
-            className="pointer-events-auto flex h-[min(560px,72vh)] w-[min(380px,calc(100vw-2.5rem))] flex-col border border-line bg-paper shadow-[0_24px_70px_-30px_rgba(11,11,11,0.4)]"
+            className="pointer-events-auto flex h-[min(560px,72vh)] w-[min(380px,calc(100vw-2.5rem))] flex-col border border-line bg-[var(--v4v-menu-bg)] shadow-[0_24px_70px_-30px_rgba(11,11,11,0.4)]"
           >
             {/* 머리 */}
             <header className="flex items-start justify-between border-b border-line-soft px-5 py-4">
@@ -193,7 +220,7 @@ export default function CSChat() {
                   message.role === 'user' ? (
                     <p
                       key={i}
-                      className="ml-auto max-w-[85%] bg-mist px-3.5 py-2.5 text-[12.5px] leading-[1.7] tracking-[-0.01em] text-ink"
+                      className="ml-auto max-w-[85%] bg-ink/[0.05] px-3.5 py-2.5 text-[12.5px] leading-[1.7] tracking-[-0.01em] text-ink"
                     >
                       {message.content}
                     </p>

@@ -21,7 +21,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-[70vh] w-full flex-col items-center justify-center gap-6 bg-paper px-6 text-center text-ink">
+    <div className="flex min-h-[70vh] w-full flex-col items-center justify-center gap-6 px-6 text-center text-ink">
       <p className="font-mono text-[9px] uppercase tracking-[0.26em] text-ash">
         Something went wrong
       </p>

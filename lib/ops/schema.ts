@@ -140,6 +140,8 @@ export const TABLES: Record<TableName, TableDef> = {
       { key: 'goal_id', label: '목표', type: 'ref', ref: 'goals', required: true, inList: true },
       { key: 'status', label: '상태', type: 'select', options: ['예정', '진행중', '대기', '완료', '보류'], inList: true },
       { key: 'due', label: '마감일', type: 'date', inList: true },
+      { key: 'done_on', label: '완료일', type: 'date',
+        hint: '완료로 바꾸면 자동으로 채워집니다 — 분야별 경험치가 이 날짜로 셉니다' },
       { key: 'field', label: '분야', type: 'select',
         options: ['디자인', '생산', '콘텐츠', '마케팅', '재무', '운영', '브랜딩'], inList: true },
       { key: 'priority', label: '우선순위', type: 'select', options: ['높음', '보통', '낮음'], inList: true },

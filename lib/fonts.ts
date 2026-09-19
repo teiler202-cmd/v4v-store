@@ -13,16 +13,25 @@ export const plexSans = IBM_Plex_Sans({
   variable: '--v4v-font-sans',
 });
 
+/**
+ * ⚠️ Mono·Inter는 미리 받지 않습니다(preload:false).
+ *    globals.css의 @theme은 --font-mono 등을 :root에 두는데, 실제 폰트 이름(--v4v-font-*)은 body에만 붙어 있어
+ *    font-mono·font-grotesk 클래스가 무효가 되고 지금 화면의 글자는 모두 IBM Plex Sans로 그려집니다.
+ *    그런데도 두 폰트(합계 약 91KB)가 모든 페이지에서 높은 우선순위로 미리 내려받아지고 있었습니다.
+ *    preload만 끄면 화면은 그대로이고, 실제로 쓰이는 순간에만 받습니다.
+ */
 export const plexMono = IBM_Plex_Mono({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   display: 'swap',
+  preload: false,
   variable: '--v4v-font-mono',
 });
 
 export const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
+  preload: false,
   variable: '--v4v-font-grotesk',
 });
 

@@ -51,7 +51,7 @@ const essays = [
         </p>
         
         <div className="py-4">
-          <p className="italic text-zinc-500 text-xs md:text-sm leading-relaxed border-l border-zinc-300 pl-4">
+          <p className="italic text-zinc-500 text-xs md:text-sm leading-relaxed border-l border-line pl-4">
             "하나님이 그들에게 복을 주시며 하나님이 그들에게 이르시되 생육하고 번성하여 땅에 충만하라, 땅을 정복하라, 바다의 물고기와 하늘의 새와 땅에 움직이는 모든 생물을 다스리라 하시니라" <br />
             — 창세기 1:28
           </p>
@@ -66,7 +66,7 @@ const essays = [
         </p>
         
         <div className="py-4">
-          <p className="italic text-zinc-500 text-xs md:text-sm leading-relaxed border-l border-zinc-300 pl-4">
+          <p className="italic text-zinc-500 text-xs md:text-sm leading-relaxed border-l border-line pl-4">
             “믿음은 바라는 것들의 실상이요 보이지 않는 것들의 증거니” <br />
             — 히브리서 11장 1절
           </p>
@@ -205,7 +205,8 @@ export default function EssayPage() {
       {/* ---------- 인덱스 (데스크톱: 좌측 고정) ---------- */}
       <nav
         aria-label="Essay index"
-        className="pointer-events-none fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 lg:block xl:left-10"
+        /* 왼쪽 레일(큰 구체와 메뉴) 옆 — 레일 폭(--v4v-rail)에 구 바깥 공기(≈40px)를 더한 만큼 비켜 섭니다. */
+        className="pointer-events-none fixed left-[calc(var(--v4v-rail)+2.75rem)] top-1/2 z-30 hidden -translate-y-1/2 lg:block xl:left-[calc(var(--v4v-rail)+3.5rem)]"
       >
         <ul className="pointer-events-auto flex flex-col gap-3">
           {ordered.map((essay) => {
@@ -237,7 +238,7 @@ export default function EssayPage() {
       {/* ---------- 인덱스 (모바일·태블릿: 상단 가로 바) ---------- */}
       <nav
         aria-label="Essay index"
-        className="scrollbar-hide sticky top-[62px] z-30 flex gap-5 overflow-x-auto border-b border-line-soft bg-paper/90 px-5 py-2.5 backdrop-blur-xl lg:hidden"
+        className="scrollbar-hide sticky top-[62px] z-30 flex gap-5 overflow-x-auto v4v-scrim px-5 py-2.5 lg:hidden"
       >
         {ordered.map((essay) => {
           const on = active === essay.slug;
@@ -256,7 +257,7 @@ export default function EssayPage() {
         })}
       </nav>
 
-      <main className="flex min-h-screen flex-col items-center bg-paper text-ink">
+      <main className="flex min-h-screen flex-col items-center text-ink">
         {ordered.map((essay) => (
           <section
             key={essay.id}

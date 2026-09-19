@@ -6,7 +6,10 @@ import { fontVariables, plexSans } from "@/lib/fonts";
 import { CartProvider } from "@/components/CartProvider";
 import { AccountProvider } from "@/components/AccountProvider";
 import Header from "@/components/Header";
+import OrbRail from "@/components/OrbRail";
 import ChromeGate from "@/components/ChromeGate";
+import WorldAmbience from "@/components/WorldAmbience";
+import AuroraField from "@/components/AuroraField";
 import Footer from "@/components/Footer";
 import CSChat from "@/components/CSChat";
 
@@ -40,11 +43,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * 첫 페인트 전에 실행되어 인트로 재생 여부를 결정합니다.
+ * 첫 페인트 전에 실행되어 '어느 세계인지'와 인트로 재생 여부를 결정합니다.
+ * - 세계(MIDBAR/EDEN)는 지난 방문의 선택(localStorage)을 <html data-world>로 새깁니다.
+ *   하늘(배경)·구체 이미지가 전부 이 속성 하나로 갈라지므로 깜빡임이 없습니다.
  * - 홈(/)에 '이번 세션에서 처음' 들어온 경우에만 인트로가 재생됩니다.
  * - 새로고침이나 다른 페이지에서의 이동에서는 인트로가 나타나지 않습니다.
+ *
+ * 인트로 구체 사진(지금 세계의 것)이 도착하는 순간도 여기서 받아 <html data-orb-loaded>에 적어 둡니다.
+ * 등장 애니메이션이 CSS로 바로 시작되므로, 자바스크립트 번들이 늦게 와도 구체가 먼저 보입니다.
+ * (React가 관리하는 <img>에 속성을 더하면 하이드레이션 불일치가 나므로 <html>에 둡니다)
  */
-const INTRO_BOOTSTRAP = `(function(){try{var d=document.documentElement;var p=location.pathname;var home=(p==="/"||p==="");var seen=window.sessionStorage.getItem("v4v:intro")==="1";d.setAttribute("data-intro",(home&&!seen)?"playing":"done");}catch(e){document.documentElement.setAttribute("data-intro","done");}})();`;
+const INTRO_BOOTSTRAP = `(function(){var d=document.documentElement;var w="midbar";try{if(window.localStorage.getItem("v4v:world")==="eden")w="eden";}catch(e){}d.setAttribute("data-world",w);try{var p=location.pathname;var home=(p==="/"||p==="");var seen=window.sessionStorage.getItem("v4v:intro")==="1";d.setAttribute("data-intro",(home&&!seen)?"playing":"done");if(home&&!seen){document.addEventListener("load",function(e){var t=e.target;if(t&&t.getAttribute&&t.getAttribute("data-orb-img")===w&&!d.hasAttribute("data-orb-loaded")){d.setAttribute("data-orb-loaded",String(Math.round(performance.now())));}},true);}}catch(e){d.setAttribute("data-intro","done");}})();`;
 
 /**
  * 언어 우선순위도 첫 페인트 전에 정합니다.
@@ -61,10 +70,22 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <body
-        className={`${fontVariables} ${plexSans.className} bg-paper text-ink m-0 p-0 flex flex-col min-h-screen antialiased`}
+        /* body에 배경을 칠하면 음수 z-index의 '세계의 하늘'을 덮어버립니다(루트 스태킹 컨텍스트의
+           페인트 순서상 body 배경이 나중). 종이색은 html(globals.css)이 이미 칠하고 있습니다.
+           relative: 세계의 공기(.v4v-sky, absolute)가 문서 전체 높이에 깔리는 기준 상자입니다. */
+        className={`${fontVariables} ${plexSans.className} text-ink relative m-0 p-0 flex flex-col min-h-screen antialiased`}
       >
         <script dangerouslySetInnerHTML={{ __html: INTRO_BOOTSTRAP }} />
         <script dangerouslySetInnerHTML={{ __html: LANG_BOOTSTRAP }} />
+
+        {/* 세계의 공기 — 모든 페이지의 뒤에 깔립니다. 체크아웃·내부 화면은 ChromeGate가 비웁니다.
+            셰이더 캔버스(AuroraField)가 진짜 배경이고, WorldAmbience의 정적 물감은
+            WebGL이 없거나 아직 준비되지 않은 순간의 밑그림입니다.
+            (같은 z:-1 평면에서는 DOM 순서가 곧 페인트 순서 — 캔버스가 나중이라 위에 그려집니다) */}
+        <ChromeGate>
+          <WorldAmbience />
+          <AuroraField />
+        </ChromeGate>
 
         <AccountProvider>
           <CartProvider>
@@ -76,6 +97,12 @@ export default function RootLayout({
               <Header />
             </ChromeGate>
           </ViewTransition>
+
+          {/* 데스크톱의 메뉴 자리 — 왼쪽 가장자리에 걸린 큰 구체(오른쪽 1/3만 보임)와 그 위의 메뉴.
+              이 레일이 있으면 본문 전체가 레일 폭만큼 오른쪽으로 비켜 섭니다(globals.css body:has). */}
+          <ChromeGate>
+            <OrbRail />
+          </ChromeGate>
 
           {/* 페이지 전환은 뷰포트 크기의 root 스냅샷으로 처리합니다.
               (본문 전체를 감싸면 페이지 높이만큼 늘어난 상자에 화면 크기 스냅샷이

@@ -65,8 +65,8 @@ function RecommendedItem({ product, addToCart }: { product: any, addToCart: (ite
   };
 
   return (
-    <div className="flex gap-4 pt-6 border-t border-zinc-200/60">
-      <div className="w-20 md:w-24 aspect-[3/4] bg-zinc-100 overflow-hidden shrink-0 border border-zinc-200">
+    <div className="flex gap-4 pt-6 border-t border-line-soft">
+      <div className="w-20 md:w-24 aspect-[3/4] bg-ink/[0.04] overflow-hidden shrink-0 border border-line-soft">
         <img
           src={sizedImage(product.images?.edges[0]?.node?.url, 192)}
           srcSet={sizedSrcSet(product.images?.edges[0]?.node?.url, [96, 192, 288])}
@@ -90,7 +90,7 @@ function RecommendedItem({ product, addToCart }: { product: any, addToCart: (ite
           {/* 원사이즈가 아닐 경우에만 드롭다운 표시 */}
           {!isOneSize && (
             <select
-              className="w-full text-[10px] border border-zinc-300 p-2 uppercase tracking-widest bg-white text-zinc-900 outline-none focus:border-zinc-900 transition-colors cursor-pointer"
+              className="w-full text-[10px] border border-line p-2 uppercase tracking-widest bg-white text-zinc-900 outline-none focus:border-ink transition-colors cursor-pointer"
               value={selectedSize}
               onChange={(e) => setSelectedSize(e.target.value)}
             >
@@ -100,7 +100,7 @@ function RecommendedItem({ product, addToCart }: { product: any, addToCart: (ite
           )}
           <button
             onClick={handleAdd}
-            className="w-full bg-zinc-100 text-zinc-900 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-center hover:bg-zinc-200 transition-colors"
+            className="w-full bg-ink/5 text-zinc-900 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-center hover:bg-ink/10 transition-colors"
           >
             Add to Bag
           </button>
@@ -203,12 +203,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       <AnimatePresence>
         {isCartOpen && (
           <>
+            {/* 전면 backdrop-blur는 사파리에서 프레임 드랍의 주범이라 뺐고, 대신 스크림을 살짝 짙게 */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed inset-0 z-[100] cursor-pointer bg-black/35 backdrop-blur-[3px]"
+              className="fixed inset-0 z-[100] cursor-pointer bg-black/40"
               onClick={() => setIsCartOpen(false)}
             />
 
@@ -217,9 +218,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.68, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-0 right-0 w-full max-w-[400px] h-full bg-white z-[101] shadow-2xl flex flex-col font-sans text-zinc-900"
+              className="fixed top-0 right-0 w-full max-w-[400px] h-full bg-[var(--v4v-menu-bg)] z-[101] shadow-[0_28px_70px_-34px_rgba(11,11,11,0.42)] flex flex-col font-sans text-zinc-900"
             >
-              <div className="flex justify-between items-center p-6 border-b border-zinc-200 shrink-0">
+              <div className="flex justify-between items-center p-6 border-b border-line-soft shrink-0">
                 <h2 className="text-xs font-bold tracking-[0.2em] uppercase">Bag ({cart.reduce((t, i) => t + i.quantity, 0)})</h2>
                 <button onClick={() => setIsCartOpen(false)} className="text-2xl font-light hover:text-zinc-500 transition-colors">&times;</button>
               </div>
@@ -234,7 +235,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                   ) : (
                     cart.map((item, index) => (
                       <div key={item.id || `cart-${index}`} className="flex gap-4">
-                        <div className="w-20 md:w-24 aspect-[3/4] bg-zinc-100 overflow-hidden shrink-0 border border-zinc-200">
+                        <div className="w-20 md:w-24 aspect-[3/4] bg-ink/[0.04] overflow-hidden shrink-0 border border-line-soft">
                           <img
                             src={sizedImage(item.image, 192)}
                             srcSet={sizedSrcSet(item.image, [96, 192, 288])}
@@ -253,10 +254,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
                             <p className="text-[10px] text-zinc-500 tracking-widest font-medium">KRW {Math.floor(Number(item.price)).toLocaleString()}</p>
                           </div>
                           <div className="flex items-center justify-between mt-4">
-                            <div className="flex items-center border border-zinc-300">
-                              <button onClick={() => updateQuantity(item.id, -1)} className="px-3 py-1.5 text-xs hover:bg-zinc-100 transition-colors">-</button>
+                            <div className="flex items-center border border-line">
+                              <button onClick={() => updateQuantity(item.id, -1)} className="px-3 py-1.5 text-xs hover:bg-ink/5 transition-colors">-</button>
                               <span className="text-[10px] w-6 text-center font-medium">{item.quantity}</span>
-                              <button onClick={() => updateQuantity(item.id, 1)} className="px-3 py-1.5 text-xs hover:bg-zinc-100 transition-colors">+</button>
+                              <button onClick={() => updateQuantity(item.id, 1)} className="px-3 py-1.5 text-xs hover:bg-ink/5 transition-colors">+</button>
                             </div>
                             <button onClick={() => updateQuantity(item.id, -item.quantity)} className="text-[10px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 underline underline-offset-4 transition-colors">Remove</button>
                           </div>
@@ -280,13 +281,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
               {/* 하단 결제 영역 */}
               {cart.length > 0 && (
-                <div className="p-6 border-t border-zinc-200 bg-zinc-50 flex flex-col gap-5 shrink-0">
+                <div className="p-6 border-t border-line-soft flex flex-col gap-5 shrink-0">
                   <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-zinc-900">
                     <span>Subtotal</span>
                     <span>KRW {subtotal.toLocaleString()}</span>
                   </div>
                   <p className="text-[9px] text-zinc-400 tracking-widest uppercase mb-2">Shipping & taxes calculated at checkout</p>
-                  <Link href="/checkout" onClick={() => setIsCartOpen(false)} className="w-full bg-zinc-900 text-white py-5 text-xs font-bold uppercase tracking-[0.2em] text-center hover:bg-zinc-800 transition-colors">
+                  <Link href="/checkout" onClick={() => setIsCartOpen(false)} className="w-full bg-ink text-white py-5 text-xs font-bold uppercase tracking-[0.2em] text-center hover:bg-ink/85 transition-colors">
                     Checkout
                   </Link>
                 </div>

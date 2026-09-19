@@ -124,8 +124,10 @@ function MediaFrame({
   return (
     <motion.figure
       ref={ref}
-      initial={{ opacity: 0, y: 30, filter: 'blur(8px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      /* blur 진입은 쓰지 않습니다 — 갤러리 컷 전체가 스크롤 중 동시에 filter를 보간하면
+         프레임마다 리래스터가 겹치는 페인트 폭풍이 됩니다(Reveal.tsx의 규칙과 동일). */
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.12 }}
       transition={{ duration: 1.25, ease: SILK, delay: (index % 2) * 0.1 }}
       className="m-0 w-full"
@@ -136,7 +138,7 @@ function MediaFrame({
           onMouseMove={handleMove}
           onMouseLeave={() => setCursor(null)}
           style={{ aspectRatio: `${item.ratio[0]} / ${item.ratio[1]}` }}
-          className="group relative w-full cursor-zoom-in overflow-hidden bg-mist"
+          className="group relative w-full cursor-zoom-in overflow-hidden bg-ink/[0.04]"
         >
           {item.type === 'video' ? (
             <video
@@ -257,7 +259,7 @@ function HeroFilm({ item, title }: { item: MediaItem; title: string }) {
   return (
     <div
       ref={wrapRef}
-      className="relative w-full overflow-hidden bg-mist bg-cover bg-center aspect-[16/9]"
+      className="relative w-full overflow-hidden bg-ink/[0.04] bg-cover bg-center aspect-[16/9]"
       style={item.poster ? { backgroundImage: `url(${item.poster})` } : undefined}
     >
       <video
@@ -288,7 +290,7 @@ function HeroFilm({ item, title }: { item: MediaItem; title: string }) {
         <button
           onClick={play}
           aria-label="Play film"
-          className="absolute inset-0 flex items-center justify-center gap-3 bg-mist/60 font-mono text-[9px] uppercase tracking-[0.28em] text-ink/70 backdrop-blur-[2px] transition-colors duration-500 hover:text-ink"
+          className="absolute inset-0 flex items-center justify-center gap-3 bg-[var(--v4v-veil)]/70 font-mono text-[9px] uppercase tracking-[0.28em] text-ink/70 transition-colors duration-500 hover:text-ink"
         >
           <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden>
             <path d="M6 4 L20 12 L6 20 Z" />
@@ -338,7 +340,9 @@ function Lightbox({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.55, ease: SILK }}
       onClick={onClose}
-      className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-[#0b0b0b]/97 px-5 py-14 backdrop-blur-sm"
+      /* 97% 불투명 암막이라 backdrop-blur는 보이지도 않는데, 뒤의 오로라 캔버스가
+         매 프레임 바뀌어 사파리가 전면 블러를 매 프레임 재계산하던 비용만 남아 뺐습니다. */
+      className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-[#0b0b0b]/97 px-5 py-14"
     >
       <button
         onClick={onClose}
@@ -351,9 +355,9 @@ function Lightbox({
       <AnimatePresence mode="wait">
         <motion.div
           key={item.id}
-          initial={{ opacity: 0, scale: 0.985, filter: 'blur(7px)' }}
-          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, scale: 1.01, filter: 'blur(7px)' }}
+          initial={{ opacity: 0, scale: 0.985 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.01 }}
           transition={{ duration: 0.65, ease: SILK }}
           onClick={(e) => e.stopPropagation()}
           className="flex max-h-[76vh] max-w-[90vw] items-center justify-center md:max-w-[68vw]"
@@ -426,7 +430,7 @@ export default function ArchivesPage() {
   const prevSeason = () => setCurrentIndex((prev) => (prev - 1 + archiveData.length) % archiveData.length);
 
   return (
-    <main className="min-h-screen bg-paper pb-28 text-ink md:pb-36">
+    <main className="min-h-screen pb-28 text-ink md:pb-36">
       <div className="mx-auto max-w-[1400px] px-5 md:px-10">
         {/* ---------- 표제 ---------- */}
         <section className="flex flex-col items-center pt-10 text-center md:pt-16">
@@ -436,7 +440,7 @@ export default function ArchivesPage() {
             </MaskUp>
           </h1>
 
-          <RevealItem standalone delay={0.16} y={14} blur={5} className="mt-4 max-w-lg md:mt-5">
+          <RevealItem standalone delay={0.16} y={14} className="mt-4 max-w-lg md:mt-5">
             <p className="font-mono text-[8px] uppercase leading-[2] tracking-[0.22em] text-ash md:text-[9px]">
               A curated collection of inspirations, past forms,
               <br className="hidden md:block" /> and the visual language of Vision for Visionary.
@@ -496,8 +500,8 @@ export default function ArchivesPage() {
             {/* 좌: 갤러리 (7) */}
             <div className="w-full md:w-[70%] md:pr-[5%]">
               <motion.div
-                initial={{ opacity: 0, filter: 'blur(9px)' }}
-                animate={{ opacity: 1, filter: 'blur(0px)' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 1.3, ease: SILK }}
               >
                 <HeroFilm item={hero} title={`${currentData.season} film`} />
@@ -540,7 +544,7 @@ export default function ArchivesPage() {
             {/* 우: 글 (3) */}
             <aside className="w-full md:w-[30%] md:border-l md:border-line-soft md:pl-[5%]">
               <div className="flex flex-col gap-5">
-                <RevealItem standalone y={14} blur={5} duration={1.1}>
+                <RevealItem standalone y={14} duration={1.1}>
                   <h2 className="font-mono text-[8.5px] uppercase leading-[1.9] tracking-[0.24em] text-ink md:text-[9px]">
                     {currentData.subtitle}
                   </h2>

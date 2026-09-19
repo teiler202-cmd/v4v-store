@@ -212,3 +212,59 @@ export function monthWord(date: string | null | undefined, today = todayKST()): 
   const month = +date.slice(5, 7);
   return date.slice(0, 4) === today.slice(0, 4) ? `${month}월` : `${date.slice(0, 4)}년 ${month}월`;
 }
+
+/* ── 경험치 ─────────────────────────────────────────────────────────────── */
+
+/**
+ * 한 사람이 늘 쥐고 있어야 하는 할 일의 수.
+ *
+ * 셋입니다. 하나면 그게 막혔을 때 손이 멈추고, 다섯이면 어느 것도 오늘 안 끝납니다.
+ * 하나를 끝내면 그 자리가 비고, 빈 자리는 화면에서 눈에 띕니다 — 바로 채우라는 뜻입니다.
+ * 규칙은 데이터베이스가 아니라 화면이 지킵니다. 할 일이 셋보다 적은 날에도
+ * 보드는 돌아가야 하니까요.
+ */
+export const FOCUS_SLOTS = 3;
+
+/**
+ * 할 일 하나를 끝내면 그 분야에 쌓이는 경험치.
+ *
+ * 열입니다. 한 레벨이 정확히 몇 개인지 셈이 되는 숫자여야 해서 그렇습니다 —
+ * 1레벨을 올리는 데 필요한 100은 할 일 열 개입니다.
+ *
+ * 우선순위나 걸린 시간으로 가중치를 주지 않습니다. 그러면 경험치를 벌려고
+ * 할 일을 크게 적는 사람이 생깁니다. 끝낸 것 하나는 하나입니다.
+ */
+export const EXP_PER_TASK = 10;
+
+export type Level = {
+  level: number;
+  /** 이 레벨에서 쌓은 경험치 */
+  into: number;
+  /** 다음 레벨까지 필요한 경험치 */
+  need: number;
+  /** 다음 레벨까지 몇 %인가 */
+  pct: number;
+};
+
+/**
+ * 경험치를 레벨로.
+ *
+ * n레벨에서 다음 레벨로 가려면 100 × n 이 필요합니다 —
+ * 1→2는 할 일 열 개, 2→3은 스무 개. 올라갈수록 느려집니다.
+ */
+export function levelOf(exp: number): Level {
+  let level = 1;
+  let rest = Math.max(0, Math.floor(exp));
+  let need = 100;
+  while (rest >= need) {
+    rest -= need;
+    level += 1;
+    need = 100 * level;
+  }
+  return { level, into: rest, need, pct: Math.round((rest / need) * 100) };
+}
+
+/** 끝낸 할 일 수 → 경험치 */
+export function expOf(done: number): number {
+  return done * EXP_PER_TASK;
+}

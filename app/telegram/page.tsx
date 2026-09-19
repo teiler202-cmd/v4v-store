@@ -183,7 +183,7 @@ export default function TelegramPage() {
   const invite = COMMUNITY.telegram;
 
   return (
-    <div className="flex w-full flex-col items-center bg-paper text-ink">
+    <div className="flex w-full flex-col items-center text-ink">
       {/* ---------- 표제 ---------- */}
       <header className="mb-14 mt-20 flex w-full flex-col items-center px-6 text-center md:mb-20 md:mt-28">
         <h1 className="font-grotesk text-[16px] font-bold uppercase tracking-[0.2em] text-ink md:text-[24px] md:tracking-[0.18em]">
@@ -191,7 +191,7 @@ export default function TelegramPage() {
             ( Telegram )
           </MaskUp>
         </h1>
-        <RevealItem standalone delay={0.26} y={16} blur={5}>
+        <RevealItem standalone delay={0.26} y={16}>
           <p className="mt-4 font-mono text-[8.5px] uppercase tracking-[0.26em] text-ash md:mt-5 md:text-[10px]">
             The room where visionaries gather
           </p>
@@ -239,7 +239,7 @@ export default function TelegramPage() {
         <section className="grid grid-cols-1 gap-10 border-t border-line-soft pt-16 md:grid-cols-12 md:gap-10 md:pt-24 lg:gap-14">
           <div className="md:col-span-5">
             <div className="md:sticky md:top-36">
-              <RevealItem standalone y={10} blur={4} duration={1} className="mb-4 md:mb-5">
+              <RevealItem standalone y={10} duration={1} className="mb-4 md:mb-5">
                 <span className="font-mono text-[9px] uppercase tracking-[0.34em] text-ash">
                   Why here
                 </span>
@@ -260,7 +260,7 @@ export default function TelegramPage() {
 
             <Reveal className="flex flex-col gap-9 md:gap-11" stagger={0.13} amount={0.14}>
               {REASONS.map((reason) => (
-                <RevealItem key={reason.en} y={22} blur={6} className="flex flex-col gap-2">
+                <RevealItem key={reason.en} y={22} className="flex flex-col gap-2">
                   <h3 className="font-grotesk text-[19px] font-bold leading-[1.15] tracking-[-0.032em] text-ink md:text-[23px]">
                     {reason.en}
                   </h3>
@@ -280,7 +280,7 @@ export default function TelegramPage() {
             </Reveal>
 
             {/* 과장하지 않습니다 — 정직한 한 줄이 신뢰를 만듭니다 */}
-            <RevealItem standalone y={18} blur={5}>
+            <RevealItem standalone y={18}>
               <Bilingual
                 en="One honest note: group chats on Telegram are encrypted to the server, not end to end — only one-to-one Secret Chats are. Treat this room as a private gathering, not a vault. Nothing you would not say aloud in a room of friends."
                 ko="한 가지는 솔직히 적어 둡니다. 텔레그램의 그룹 대화는 서버까지 암호화되지만 종단간 암호화는 아닙니다 — 1:1 비밀 대화만 그렇습니다. 이 방은 금고가 아니라 사적인 모임으로 여겨 주세요. 친구들 앞에서 소리 내어 말하지 않을 것은 이곳에도 적지 마세요."
@@ -295,7 +295,7 @@ export default function TelegramPage() {
         <section className="grid grid-cols-1 gap-10 border-t border-line-soft pt-16 md:grid-cols-12 md:gap-10 md:pt-24 lg:gap-14">
           <div className="md:col-span-5">
             <div className="md:sticky md:top-36">
-              <RevealItem standalone y={10} blur={4} duration={1} className="mb-4 md:mb-5">
+              <RevealItem standalone y={10} duration={1} className="mb-4 md:mb-5">
                 <span className="font-mono text-[9px] uppercase tracking-[0.34em] text-ash">
                   What you get
                 </span>
@@ -320,7 +320,7 @@ export default function TelegramPage() {
               <RevealItem
                 key={benefit.en}
                 y={22}
-                blur={6}
+               
                 className="flex gap-5 border-b border-line-soft py-6 first:pt-0 last:border-0 md:gap-8 md:py-8"
               >
                 <span className="mt-1 shrink-0 font-mono text-[9px] uppercase tracking-[0.28em] text-ash">
@@ -350,7 +350,7 @@ export default function TelegramPage() {
         {/* ---------- 가입 안내 ---------- */}
         <section className="flex flex-col gap-12 border-t border-line-soft pt-16 md:gap-16 md:pt-24">
           <div className="flex flex-col items-center gap-4 text-center">
-            <RevealItem standalone y={10} blur={4} duration={1}>
+            <RevealItem standalone y={10} duration={1}>
               <span className="font-mono text-[9px] uppercase tracking-[0.34em] text-ash">
                 Step by step
               </span>
@@ -360,7 +360,7 @@ export default function TelegramPage() {
                 How to join
               </MaskUp>
             </h2>
-            <RevealItem standalone y={16} blur={5}>
+            <RevealItem standalone y={16}>
               <Bilingual
                 en="Never used Telegram before? It takes about two minutes, and you will not need an email or a password."
                 ko="텔레그램이 처음이신가요? 2분이면 됩니다. 이메일도 비밀번호도 필요하지 않습니다."
@@ -371,7 +371,7 @@ export default function TelegramPage() {
           </div>
 
           <Reveal
-            className="grid grid-cols-1 gap-px bg-line-soft md:grid-cols-2 lg:grid-cols-3"
+            className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3"
             stagger={0.1}
             amount={0.1}
           >
@@ -379,8 +379,8 @@ export default function TelegramPage() {
               <RevealItem
                 key={step.en}
                 y={20}
-                blur={5}
-                className="flex flex-col gap-3 bg-paper p-7 md:p-8"
+               
+                className="flex flex-col gap-3 p-7 md:p-8"
               >
                 <span className="font-mono text-[9px] uppercase tracking-[0.28em] tabular-nums text-ash">
                   {String(index + 1).padStart(2, '0')}
@@ -406,7 +406,7 @@ export default function TelegramPage() {
 
         {/* ---------- 방의 규칙 ---------- */}
         <section className="flex flex-col items-center gap-10 border-t border-line-soft pt-16 md:pt-24">
-          <RevealItem standalone y={10} blur={4} duration={1}>
+          <RevealItem standalone y={10} duration={1}>
             <span className="font-mono text-[9px] uppercase tracking-[0.34em] text-ash">
               House rules
             </span>
@@ -421,7 +421,7 @@ export default function TelegramPage() {
               <RevealItem
                 key={rule.en}
                 y={18}
-                blur={5}
+               
                 className="flex items-baseline gap-5 border-b border-line-soft py-5 last:border-0 md:gap-8"
               >
                 <span className="shrink-0 font-mono text-[9px] tabular-nums text-ash">

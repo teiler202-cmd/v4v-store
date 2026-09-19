@@ -74,7 +74,9 @@ export function RevealItem({
   className,
   opacity = 1,
   y = 30,
-  blur = 7,
+  /** 기본 0 — filter는 매 프레임 요소를 다시 래스터해, 스태거로 여럿이 겹치면
+      스크롤 중 페인트 폭풍이 됩니다(특히 사파리). 꼭 필요한 히어로에만 3~4px로 명시하세요. */
+  blur = 0,
   duration = 1.35,
   standalone = false,
   delay = 0,
@@ -89,11 +91,11 @@ export function RevealItem({
         visible: { opacity, transition: { duration: 0.3 } },
       }
     : {
-        hidden: { opacity: 0, y, filter: `blur(${blur}px)` },
+        hidden: { opacity: 0, y, ...(blur > 0 ? { filter: `blur(${blur}px)` } : {}) },
         visible: {
           opacity,
           y: 0,
-          filter: 'blur(0px)',
+          ...(blur > 0 ? { filter: 'blur(0px)' } : {}),
           transition: { duration, ease: SILK, delay },
         },
       };
@@ -153,8 +155,10 @@ export function MaskUp({
 
   return (
     <motion.span className={`block overflow-hidden ${className ?? ''}`} {...outer}>
+      {/* will-change는 두지 않습니다 — framer가 애니메이션 중에만 레이어를 승격하고,
+          상시 승격은 제목마다 GPU 텍스처를 영구 점유해 레티나에서 글자가 흐려질 수도 있습니다. */}
       <motion.span
-        className={`block will-change-transform ${innerClassName ?? ''}`}
+        className={`block ${innerClassName ?? ''}`}
         variants={variants}
       >
         {children}
@@ -172,7 +176,8 @@ export function ScrollProgress() {
     <motion.div
       aria-hidden
       style={{ scaleX: width }}
-      className="pointer-events-none fixed left-0 top-0 z-[60] h-px w-full origin-left bg-ink/25"
+      /* 본문 폭만 가로지릅니다 — 데스크톱에서는 왼쪽 레일(--v4v-rail) 옆에서 시작합니다. */
+      className="pointer-events-none fixed left-[var(--v4v-rail)] right-0 top-0 z-[60] h-px origin-left bg-ink/25"
     />
   );
 }
@@ -220,10 +225,12 @@ export function WordReveal({
           style={{ paddingBottom: '0.08em' }}
         >
           <motion.span
-            className="inline-block will-change-transform"
+            /* 단어별 blur·will-change 제거 — 긴 문장이면 수십 레이어 + 리래스터가 쌓입니다.
+               마스크 슬라이드업(transform)만으로도 충분히 '생각처럼' 떠오릅니다. */
+            className="inline-block"
             variants={{
-              hidden: { y: '104%', opacity: 0, filter: 'blur(5px)' },
-              visible: { y: '0%', opacity: 1, filter: 'blur(0px)' },
+              hidden: { y: '104%', opacity: 0 },
+              visible: { y: '0%', opacity: 1 },
             }}
             transition={{ duration, ease: SILK }}
           >

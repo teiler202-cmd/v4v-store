@@ -240,7 +240,7 @@ function Orders({ orders }: { orders: any[] }) {
             <ul className="flex flex-col gap-4">
               {items.map((item: any, i: number) => (
                 <li key={`${order.id}-${i}`} className="flex items-center gap-4">
-                  <div className="h-16 w-14 shrink-0 overflow-hidden bg-mist">
+                  <div className="h-16 w-14 shrink-0 overflow-hidden bg-ink/[0.04]">
                     {item.variant?.image?.url && (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img

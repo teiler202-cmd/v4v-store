@@ -16,6 +16,9 @@ description: V4V(VISION FOR VISIONARY) 운영 보드를 읽고 쓰는 정해진 
 | 표 정의 (컬럼·선택지·라벨) | `lib/ops/schema.ts` — **컬럼을 더하려면 여기와 `ops-migration/schema.sql` 둘 다** |
 | 계산식 (신호·진행률·마진·불량률·흐름) | `lib/ops/signals.ts` — 한 곳뿐입니다 |
 | 첫 화면 '흐름' (비전→달→주→오늘 나무) | `lib/ops/cascade.ts` (계산) · `app/ops/(board)/Cascade.tsx` (화면) |
+| 집중·경험치 (지금 누가 무엇을 잡고 있는가) | `lib/ops/focus.ts` (계산) · `app/ops/(board)/Focus.tsx` (화면) |
+| 밀어서 완료·수정·삭제 | `app/ops/(board)/Swipe.tsx` |
+| 구절 (철학 오른쪽) | `lib/ops/verses.ts` — 본문은 getBible 에서 받아 적은 것. 손으로 고치지 않는다 |
 | 조회 (브리핑·보드) | `lib/ops/queries.ts` |
 | 쓰기 (서버 액션) | `app/ops/actions.ts` |
 | 산문 (브랜드 정의·톤앤매너·검수 기준) | `content/ops/*.md` — **사람 소유. 요청 없이 고치지 않는다** |
@@ -69,6 +72,8 @@ npm run ops:migrate -- ops-migration/002-cascade.sql
 첫 화면의 관(파이프)이 차오르는 높이가 바로 이 숫자입니다.
 
 곁가지:
+- **집중 `focus`** 지금 손에 쥔 할 일. 한 사람이 늘 **셋 이상**을 쥡니다. 쥐면 행이 생기고
+  끝내면 행이 사라집니다 — 기록이 아니라 '지금'입니다. 한 할 일은 한 사람만 쥡니다.
 - **작업물 `archive`** 파일이 사는 유일한 곳. `one_liner` 를 반드시 채웁니다(비울 수 없습니다).
 - **플레이북 `playbooks`** 반복 절차서. `procedure` 에 AI에게 건넬 본문이 있습니다.
 - **메모 `memos`** 팀원별 쪽지. 보드 아래쪽 칸. 자기 칸에만 씁니다. 기록이 쌓이지 않으니
@@ -82,7 +87,7 @@ npm run ops:migrate -- ops-migration/002-cascade.sql
 |---|---|---|
 | `visions` | title | one_liner, metric, target, current, due, status |
 | `goals` | title | done_when, **horizon('월'·'주')**, **parent_id**, area, status, priority, due, done_on, result, note, vision_id |
-| `tasks` | title | status, field, priority, due, hours, note, **goal_id**, product_id, partner_id |
+| `tasks` | title | status, field, priority, due, **done_on**, hours, note, **goal_id**, product_id, partner_id |
 | `products` | name | sku, line, kind, stage, cost, price, launch_on, shopify_handle |
 | `partners` | name | kinds[], status, contact_name, phone, email, moq, price_note, last_contact |
 | `ledger` | title | amount, spent_on, scope, account, nature, recurring, product_id, partner_id |
@@ -92,6 +97,7 @@ npm run ops:migrate -- ops-migration/002-cascade.sql
 | `playbooks` | title | area, status, actor, cadence, tools[], trigger_when, input, output, approval, procedure |
 
 조인 표: `goal_playbooks`, `goal_products`, `product_partners`.
+집중: `focus` (member_id, task_id, picked_at).
 파일: `files` (archive_id · ledger_id · qc_log_id 중 하나에 붙습니다).
 
 ## 절대 규칙
@@ -119,6 +125,27 @@ npm run ops:migrate -- ops-migration/002-cascade.sql
 
 사용자가 "브리핑"이라고 하면 같은 숫자를 SQL 로 직접 내서 대화로 알려 줍니다.
 어딘가에 써 넣지 않습니다 — 화면이 이미 최신입니다.
+
+### 집중 — 지금 누가 무엇을 잡고 있는가
+
+보드 오른쪽 '파티' 칸입니다. 사람이 직접 잡고 내려놓습니다 — AI가 대신 잡지 않습니다.
+
+- 한 사람이 **셋 이상**을 쥡니다. 하나를 완료하면 그 칸이 비고, 바로 다음 하나를 채웁니다.
+- 완료하면 `focus` 행이 사라지고 `tasks.done_on` 이 오늘로, `owner_id` 가 비어 있었으면
+  끝낸 사람으로 채워집니다 (이미 담당이 있으면 건드리지 않습니다).
+- 사용자가 "지금 뭐 하고 있어?" 라고 물으면 이 표를 읽습니다:
+  ```bash
+  npm run ops:q -- "select m.name, t.title, t.field, t.due from focus f
+    join members m on m.id = f.member_id join tasks t on t.id = f.task_id
+    order by m.name, f.picked_at"
+  ```
+- 누군가 세 칸을 못 채우고 있으면 주간 정리에서 짚습니다 — 잡을 할 일이 없다는 뜻이거나,
+  할 일이 너무 커서 쪼개지지 않았다는 뜻입니다.
+
+**경험치는 컬럼이 아닙니다.** 분야(`tasks.field`)별로 **끝낸 할 일 × 10** 이고, n레벨에서
+다음 레벨까지 100 × n 입니다 (`lib/ops/signals.ts` 의 `EXP_PER_TASK`·`levelOf`).
+우선순위나 걸린 시간으로 가중치를 주지 않습니다 — 그러면 경험치를 벌려고 할 일을 크게 적습니다.
+담당(`owner_id`)이 없는 채로 끝난 할 일은 **누구의 경험치도 아닙니다.** 아무에게나 붙이지 않습니다.
 
 ### 주간 정리 (월요일)
 
@@ -210,6 +237,14 @@ npm run ops:migrate -- ops-migration/002-cascade.sql
   먼저 할 일을 옮기세요.
 - **`goals.parent_id` 는 자기 자신을 가리킬 수 없습니다** (`goals_parent_not_self`).
   달 목표에 `parent_id` 를 넣지 않습니다 — 달은 비전(`vision_id`)에 매답니다.
+- **스키마 변경은 `ops-migration/` 의 번호 붙은 파일로 합니다.** 지금까지 002(흐름 두 층),
+  003(집중·`tasks.done_on`)을 적용했습니다. 새 데이터베이스를 세울 때는 `schema.sql` 한 장이면
+  됩니다 — 마이그레이션 내용이 거기에도 반영돼 있습니다.
+- **첫 화면은 20초마다 스스로 새로 고칩니다** (`app/ops/(board)/Live.tsx`, 보고 있는 탭만).
+  그래서 첫 화면에 조회를 하나 더하면 그 비용이 20초마다 반복됩니다. 더하기 전에
+  기존 질의(`cascadeBoard`·`focusBoard`)에 얹을 수 없는지 먼저 보세요.
+- **흐름 화면에서는 옆으로 밀어 끝냅니다.** 비전·목표 카드와 할 일 줄을 트랙패드 두 손가락으로
+  왼쪽으로 밀면 완료·수정·삭제가 나옵니다(`Swipe.tsx`). 카드에는 '⋯' 손잡이도 있습니다.
 - **화면 하나가 접속을 적게 잡습니다.** 첫 화면은 왕복 한 번이고(`cascadeBoard`),
   나머지도 동시에 묻지 않고 차례로 묻습니다. Supabase 풀러의 접속은 프로젝트가
   나눠 쓰는 자리라, 한 화면이 여럿을 쥐면 다음 질의가 **오류 없이 멈춰 섭니다**.

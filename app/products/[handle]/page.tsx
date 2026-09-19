@@ -17,7 +17,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
   if (!product) notFound();
 
   return (
-    <main className="min-h-screen bg-white text-black font-sans selection:bg-zinc-200 selection:text-black">
+    <main className="min-h-screen text-ink font-sans">
       
       {/* 데이터를 통째로 뷰 컴포넌트에 넘겨줍니다 */}
       <ProductClientView product={product} handle={handle} />

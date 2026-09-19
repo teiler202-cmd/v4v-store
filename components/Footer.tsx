@@ -39,7 +39,9 @@ export default function Footer() {
   return (
     <footer
       style={{ viewTransitionName: 'v4v-footer' }}
-      className="v4v-chrome w-full border-t border-line-soft bg-paper px-6 pb-14 pt-24 text-ink md:px-10 md:pt-32"
+      /* 상자를 두르지 않습니다 — 오로라 캔버스 위에 글이 그대로 놓여,
+         본문에서 발치까지 한 장의 종이로 이어집니다. (유리·보더·backdrop-blur 제거 = 사파리 스크롤 비용도 함께 제거) */
+      className="v4v-chrome w-full px-6 pb-14 pt-24 text-ink md:px-10 md:pt-32"
     >
       <div className="mx-auto flex max-w-[1500px] flex-col gap-12">
         {/* 0. 뉴스레터 */}

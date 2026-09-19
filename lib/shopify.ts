@@ -17,12 +17,22 @@ import { inContext, shopifyFetch, type StorefrontLanguage } from '@/lib/shopify-
 export async function getProducts(language?: StorefrontLanguage) {
   const query = `
     query getProducts${inContext(language)} {
-      products(first: 10) {
+      products(first: 24) {
         edges {
           node {
             id
             title
             handle
+            # Shop 드롭다운 필터(세계·품목)가 읽는 분류 신호들 — lib/catalog.ts 가 해석합니다.
+            tags
+            productType
+            collections(first: 10) {
+              edges {
+                node {
+                  handle
+                }
+              }
+            }
             priceRange {
               minVariantPrice {
                 amount
