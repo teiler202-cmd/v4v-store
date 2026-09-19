@@ -47,7 +47,10 @@ const warmFontFor = (href: string) => {
 };
 
 function useIsActive() {
-  const pathname = usePathname();
+  const raw = usePathname();
+  // Vercel이 홈(ISR)을 다시 그릴 때는 경로가 '/index'로 잡힙니다 — 그대로 비교하면 서버 HTML에서 Shop이
+  // 활성으로 표시되지 않고, 하이드레이션은 속성 차이를 고치지 않아 첫 방문 내내 밑줄이 빠져 있었습니다.
+  const pathname = raw === '/index' ? '/' : raw;
   return (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
 }
 
